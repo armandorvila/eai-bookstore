@@ -1,0 +1,21 @@
+package com.armandorv.miw.eai.bookstore.impl.component;
+
+import org.mule.api.transformer.TransformerException;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.armandorv.miw.eai.bookstore.api.domain.Order;
+import com.armandorv.miw.eai.bookstore.api.service.IBookService;
+
+public class StockVerifier {
+
+	@Autowired
+	private IBookService bookService;
+
+	public Order checkStock(Order order) throws TransformerException {
+
+		order.setInStock(bookService.isAvailable(order.getBook(),
+				order.getAmount()));
+
+		return order;
+	}
+}

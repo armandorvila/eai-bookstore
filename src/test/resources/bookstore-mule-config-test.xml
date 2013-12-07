@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core"
+	version="CE-3.4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+
+	<!-- ******************* Spring components ******************************** -->
+
+	<spring:beans>
+		<spring:import resource="classpath:META-INF/spring/bookstore-context.xml" />
+		<spring:import resource="classpath:META-INF/spring/bookstore-datasource-context-test.xml" />
+
+		<spring:bean id="stockVerifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.StockVerifier" />
+		<spring:bean id="orderProcessorComponent" class="com.armandorv.miw.eai.bookstore.impl.component.OrderProcessor" />
+		<spring:bean id="orderRefuserComponent" class="com.armandorv.miw.eai.bookstore.impl.component.OrderRefuser" />
+		<spring:bean id="loanBrokerComponent" class="com.armandorv.miw.eai.bookstore.impl.component.LoanBroker" />
+		<spring:bean id="vipVerifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.VipVerifier" />
+		<spring:bean id="invoiceGeneratorComponent" class="com.armandorv.miw.eai.bookstore.impl.component.InvoiceGenerator" />
+		<spring:bean id="loanNotifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.LoanNotifier" />
+	</spring:beans>
+
+	<!-- ******************* Testing specific endpoints ******************************** -->
+
+	<vm:endpoint path="httpInputEndpont" name="httpInputEndpont" doc:name="VM" />
+	<vm:endpoint path="fileInputEndpoint" name="fileInputEndpoint" doc:name="VM" />
+
+	<vm:endpoint path="smtpInvoicesOutboundEndpont" name="smtpInvoicesOutboundEndpont" doc:name="VM" />
+	<vm:endpoint path="smtpNotificationsOutboundEndpont" name="smtpNotificationsOutboundEndpont" doc:name="VM" />
+	<vm:endpoint path="smtpDispatchNoteOutboundEndpont" name="smtpDispatchNoteOutboundEndpont" doc:name="VM" />
+	<vm:endpoint path="smtpExpressDispatchNoteOutboundEndpont" name="smtpExpressDispatchNoteOutboundEndpont"
+		doc:name="VM" />
+
+	<vm:endpoint path="fileInvoicesOutboundEndpont" name="fileInvoicesOutboundEndpont" doc:name="VM" />
+	<vm:endpoint path="fileDispatchNoteOutboundEndpont" name="fileDispatchNoteOutboundEndpont" doc:name="VM" />
+	<vm:endpoint path="fileExpressDispatchNoteOutboundEndpont" name="fileExpressDispatchNoteOutboundEndpont"
+		doc:name="VM" />
+
+	<!-- ******************* Application flows ******************************** -->
+
+	<flow name="checkOrderStock" doc:name="checkOrderStock">
+
+		<description>
+			This process receives a collections of orders, then
+			iterates the collection, verifying the stock and
+			spliting the
+			collection. Every spllited order is routed to the process Order or to
+			the denied Order Process.
+		</description>
+
+		<composite-source doc:name="Composite Source">
+			<inbound-endpoint ref="fileInputEndpoint" doc:name="File Testing" />
+			<inbound-endpoint ref="httpInputEndpont" doc:name="Http Testing" />
+		</composite-source>
+
+		<foreach doc:name="For Each Order in collection : verify">
+			<logger message=" Received order #[message:payload]" level="INFO" doc:name="Logger" />
+			<component doc:name="stockVerifier">
+				<spring-object bean="stockVerifierComponent" />
+			</component>
+		</foreach>
+
+		<collection-splitter doc:name="Collection Splitter" enableCorrelation="ALWAYS" />
+
+		<choice doc:name="Choice">
+			<when expression="payload.isInStock()">
+				<logger message="Order #[message:payload] is in stock ..." level="INFO" doc:name="Logger" />
+				<vm:outbound-endpoint path="processOrderInStock" doc:name="toProcessOrderInStock" />
+			</when>
+			<otherwise>
+				<logger message="Order #[message:payload] is not in stock ..." level="INFO" doc:name="Logger" />
+				<vm:outbound-endpoint path="refuseByNotStock" doc:name="toRefuseByNotStock" />
+			</otherwise>
+		</choice>
+	</flow>
+
+	<flow name="processOrderInStock" doc:name="processOrderInStock">
+
+		<description>
+			This process is in chaarge of decrement the stock of the
+			ordered book and
+			aggregate all orders generating a
+			coollection.
+		</description>
+
+		<vm:inbound-endpoint path="processOrderInStock" doc:name="fromCheckOrderStock" />
+
+		<logger message="Cheking stock for Order #[message:payload]" level="INFO" doc:name="Logger" />
+
+		<component doc:name="orderProcessor">
+			<spring-object bean="orderProcessorComponent" />
+		</component>
+
+		<logger message="Building shipment (orders aggregattion)" level="INFO" doc:name="Logger" />
+
+		<custom-aggregator class="com.armandorv.miw.eai.bookstore.impl.aggregator.OrdersAggregator"
+			doc:name="OrdersToShipment">
+		</custom-aggregator>
+
+		<choice doc:name="Choice">
+			<when expression="payload.getCustomer().hasLoan()">
+				<vm:outbound-endpoint path="manageLoanRequest" doc:name="toManageLoanRequest" />
+			</when>
+			<otherwise>
+				<vm:outbound-endpoint path="generateInvoice" doc:name="toGenerateInvoice" />
+			</otherwise>
+		</choice>
+	</flow>
+
+	<flow name="manageLoanRequest" doc:name="manageLoanRequest">
+		<vm:inbound-endpoint path="manageLoanRequest" doc:name="fromProcessOrderInStock" />
+		<component doc:name="loanOfficer">
+			<spring-object bean="loanBrokerComponent" />
+		</component>
+		<choice doc:name="Choice">
+			<when expression="payload.getCustomer().hasLoanAccepted()">
+				<logger message="Loan accepted for shipment: #[message:payload]" level="INFO" doc:name="Logger" />
+				<all doc:name="All">
+					<processor-chain>
+						<component doc:name="loanNotifierComponent">
+							<spring-object bean="loanNotifierComponent" />
+						</component>
+						<outbound-endpoint ref="smtpNotificationsOutboundEndpont" doc:name="smtpNotificationsOutboundEndpont" />
+					</processor-chain>
+					<vm:outbound-endpoint path="generateInvoice" doc:name="toGenerateInvoice" />
+				</all>
+			</when>
+			<otherwise>
+				<logger message="Loan for shipment: #[message:payload] has been denied." level="INFO" doc:name="Logger" />
+				<vm:outbound-endpoint path="generateInvoice" doc:name="toGenerateInvoice" />
+			</otherwise>
+		</choice>
+	</flow>
+
+	<flow name="generateInvoice" doc:name="generateInvoice">
+
+		<vm:inbound-endpoint path="generateInvoice" doc:name="fromProcessOrderInStock | fromManageLoanRequest" />
+
+		<logger message="Generating invoice for Shipment #[message:payload]" level="INFO" doc:name="Logger" />
+
+		<component doc:name="invoiceGenerator">
+			<spring-object bean="invoiceGeneratorComponent" />
+		</component>
+
+		<logger message="Generated invoice for #[message:payload]" level="INFO" doc:name="Logger" />
+
+		<all doc:name="All">
+			<processor-chain>
+				<expression-transformer expression="payload.getInvoice()" doc:name="ShipmentToInvoice" />
+				<outbound-endpoint ref="smtpInvoicesOutboundEndpont" doc:name="smtpInvoicesOutboundEndpont" />
+			</processor-chain>
+
+			<processor-chain>
+				<expression-transformer expression="payload.getInvoice()" doc:name="ShipmentToInvoice" />
+				<outbound-endpoint ref="fileInvoicesOutboundEndpont" doc:name="fileInvoicesOutboundEndpont" />
+			</processor-chain>
+
+			<vm:outbound-endpoint path="sendOrders" doc:name="toSendOrders" />
+		</all>
+
+		<catch-exception-strategy enableNotifications="true" />
+	</flow>
+
+	<flow name="sendOrders" doc:name="sendOrders">
+		<vm:inbound-endpoint path="sendOrders" doc:name="fromProcessOrderInStock" />
+
+		<logger message="Preparing dispatch note for shipment: #[message:payload]." level="INFO" doc:name="Logger" />
+
+		<component doc:name="vipVerifierComponent">
+			<spring-object bean="vipVerifierComponent" />
+		</component>
+
+		<choice doc:name="Choice">
+
+			<!-- Send express note -->
+			<when expression="payload.isExpress()">
+				<logger message="Sending express dispath note ..." level="INFO" doc:name="Logger" />
+
+				<all doc:name="All">
+					<outbound-endpoint ref="smtpExpressDispatchNoteOutboundEndpont" doc:name="smtpNotificationsOutboundEndpont" />
+					<outbound-endpoint ref="fileExpressDispatchNoteOutboundEndpont" doc:name="fileExpressDispatchNoteOutboundEndpont" />
+				</all>
+			</when>
+
+			<!-- Send ordinary note -->
+			<otherwise>
+				<logger message="Sending ordniary dispath note ..." level="INFO" doc:name="Logger" />
+
+				<outbound-endpoint ref="smtpDispatchNoteOutboundEndpont" doc:name="smtpDispatchNoteOutboundEndpont" />
+				<outbound-endpoint ref="fileDispatchNoteOutboundEndpont" doc:name="fileDispatchNoteOutboundEndpont" />
+			</otherwise>
+		</choice>
+
+		<all doc:name="All">
+			<outbound-endpoint ref="smtpDispatchNoteOutboundEndpont" doc:name="smtpDispatchNoteOutboundEndpont" />
+			<outbound-endpoint ref="fileDispatchNoteOutboundEndpont" doc:name="fileDispatchNoteOutboundEndpont" />
+		</all>
+	</flow>
+
+	<flow name="refuseByNotStock" doc:name="refuseByNotStock">
+		<vm:inbound-endpoint path="refuseByNotStock" doc:name="VM" />
+
+		<logger message="Refusing order #[message:payload] " level="INFO" doc:name="Logger" />
+
+		<component doc:name="orderRefuser">
+			<spring-object bean="orderRefuserComponent" />
+		</component>
+
+		<logger message="Sending notification #[message:payload] " level="INFO" doc:name="Logger" />
+
+		<!-- <all doc:name="All"> -->
+		<outbound-endpoint ref="smtpNotificationsOutboundEndpont" doc:name="smtpNotificationsOutboundEndpont" />
+		<!-- </all> -->
+	</flow>
+
+	<!-- ****************************** Invoice to Html Transformation ********************** -->
+
+	<mulexml:xslt-transformer name="invoiceXsltTransformer" encoding="UTF-8">
+		<mulexml:xslt-text>
+			<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+				<xsl:output method="html" />
+				<xsl:param name="number" />
+				<xsl:param name="date" />
+				<xsl:param name="importe" />
+
+				<xsl:template match="/">
+
+					Armando 's Bookstore
+					<br />
+					<p>This is an invoice generated from Armando 's bookstore.</p>
+					Invoice
+					<br />
+					<ul>
+						<li>
+							Number:
+							<xsl:value-of select="/invoice/number" />
+						</li>
+						<li>
+							Date:
+							<xsl:value-of select="/invoice/date" />
+						</li>
+					</ul>
+					Books invoiced
+					<br />
+					<table>
+						<tr>
+							<th>ISBN</th>
+							<th>Name</th>
+						</tr>
+
+						<xsl:for-each select="/invoice/books/book">
+							<td>
+								<xsl:value-of select="isbn" />
+							</td>
+							<td>
+								<xsl:value-of select="name" />
+							</td>
+						</xsl:for-each>
+
+						<tr>
+							<td>
+								Importe :
+								<xsl:value-of select="/invoice/importe" />
+							</td>
+						</tr>
+					</table>
+
+				</xsl:template>
+
+			</xsl:stylesheet>
+		</mulexml:xslt-text>
+
+	</mulexml:xslt-transformer>
+
+	<mulexml:object-to-xml-transformer name="invoice2XmlTransformer" encoding="UTF-8">
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Invoice" name="invoice" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Book" name="book" />
+	</mulexml:object-to-xml-transformer>
+</mule>

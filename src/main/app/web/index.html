@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Armando 's Bookstore</title>
+
+<meta charset="utf-8">
+<script type="text/javascript"
+	src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+<script>
+	$(document).ready(
+			function() {
+				$.getJSON("http://localhost:8090/books", function(json) {
+					$.each(json, function(index, value) {
+						var option = "<option value='" + value.isbn +"'>"
+								+ value.name + "</option>";
+						$(".booksCatalog").append(option);
+					});
+				});
+			});
+</script>
+
+</head>
+<body>
+	<header>
+		<h1>Armando 's Bookstore</h1>
+	</header>
+
+	<nav></nav>
+
+	<aside></aside>
+
+	<section id="content">
+		<form id="orders" action="/orders" method="post">
+
+			<ul>
+				<li><label for="name" class="fieldLabel">Name : </label> <input
+					id="name" name="name" type="text" autocomplete="on" class="field"
+					maxlength="100" /></li>
+
+				<li><label for="nif" class="fieldLabel">NIF : </label> <input
+					id="nif" name="nif" type="text" autocomplete="on" class="field"
+					maxlength="100" /></li>
+
+				<li><label for="address" class="fieldLabel">Address : </label>
+					<input id="address" name="address" type="text" autocomplete="on"
+					class="field" maxlength="100" /></li>
+
+				<li><label for="mail" class="fieldLabel">Mail : </label> <input
+					id="mail" name="mail" type="email" autocomplete="on" class="field"
+					maxlength="100" /></li>
+
+				<li><label for="loan" class="fieldLabel">Loan : </label> <input
+					id="loan" name="loan" type="checkbox" autocomplete="on"
+					class="field" /></li>
+
+				<li><label for="book" class="fieldLabel">Book : </label> <select
+					id="booksCatalog" name="book" class="booksCatalog">
+						<!-- It's filled with AXAJ -->
+
+				</select> <label for="amount" class="fieldLabel">Amount : </label> <input
+					id="amount" name="amount" type="number" class="field" /></li>
+
+				<li><input value="Submit Order" type="submit"></li>
+			</ul>
+		</form>
+	</section>
+
+	<footer> </footer>
+</body>
+</html>

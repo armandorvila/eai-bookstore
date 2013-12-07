@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:jdbc="http://www.mulesoft.org/schema/mule/jdbc" xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:smtps="http://www.mulesoft.org/schema/mule/smtps" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core"
+	version="CE-3.4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd http://www.mulesoft.org/schema/mule/jdbc http://www.mulesoft.org/schema/mule/jdbc/current/mule-jdbc.xsd http://www.mulesoft.org/schema/mule/smtps http://www.mulesoft.org/schema/mule/smtps/current/mule-smtps.xsd
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+
+	<!-- ******************* Spring components ******************************** -->
+
+	<spring:beans>
+		<spring:import resource="classpath:META-INF/spring/bookstore-context.xml" />
+		<spring:import resource="classpath:META-INF/spring/bookstore-datasource-context.xml" />
+
+		<spring:bean id="booksCatalogProviderComponent" class="com.armandorv.miw.eai.bookstore.impl.component.BooksCatalogProvider" />
+		<spring:bean id="stockVerifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.StockVerifier" />
+		<spring:bean id="orderProcessorComponent" class="com.armandorv.miw.eai.bookstore.impl.component.OrderProcessor" />
+		<spring:bean id="orderRefuserComponent" class="com.armandorv.miw.eai.bookstore.impl.component.OrderRefuser" />
+		<spring:bean id="loanBrokerComponent" class="com.armandorv.miw.eai.bookstore.impl.component.LoanBroker" />
+		<spring:bean id="vipVerifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.VipVerifier" />
+		<spring:bean id="invoiceGeneratorComponent" class="com.armandorv.miw.eai.bookstore.impl.component.InvoiceGenerator" />
+		<spring:bean id="loanNotifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.LoanNotifier" />
+	</spring:beans>
+
+	<!-- ******************* Connectors ******************************** -->
+
+	<file:connector name="fileInputConnector" fileAge="2000" autoDelete="true" moveToDirectory="/home/armandorv/mule/files/backup"
+		moveToPattern="#[header:originalFileName].backup" doc:name="File" />
+
+	<smtp:gmail-connector name="gmailConnector" doc:name="Gmail" contentType="text/html" />
+
+	<file:connector name="fileOutputConnector" doc:name="File" />
+
+
+	<!-- ******************* Application flows ******************************** -->
+	<flow name="web" doc:name="web">
+		<http:inbound-endpoint doc:name="Http Form" exchange-pattern="request-response" contentType="text/html"
+			address="http://0.0.0.0:8090/web" />
+		<http:static-resource-handler resourceBase="${app.home}/web" defaultFile="index.html"
+			doc:name="HTTP Static Resource Handler" />
+	</flow>
+
+	<flow name="restBooksCatalog" doc:name="restBooksCatalog">
+		<http:inbound-endpoint doc:name="Http Form" exchange-pattern="request-response" contentType="text/html"
+			address="http://0.0.0.0:8090/books" />
+
+		<component doc:name="catalogProvider">
+			<spring-object bean="booksCatalogProviderComponent" />
+		</component>
+
+		<response>
+			<json:object-to-json-transformer doc:name="Object to JSON" />
+		</response>
+	</flow>
+
+	<flow name="checkOrderStock" doc:name="checkOrderStock">
+
+		<description>
+			This process receives a collections of orders, then
+			iterates the collection, verifying the stock and
+			spliting the
+			collection. Every spllited order is routed to the process Order or to
+			the denied Order Process.
+		</description>
+
+		<composite-source doc:name="Composite Source">
+
+			<file:inbound-endpoint name="fileInputEndpoint" connector-ref="fileInputConnector" path="//home/armandorv/files/input"
+				doc:name="File">
+				<custom-transformer class="com.armandorv.miw.eai.bookstore.impl.transformer.FileToOrdersTransofmer" />
+			</file:inbound-endpoint>
+
+			<http:inbound-endpoint address="http://0.0.0.0:8090/orders" doc:name="httpOrdersProcessorEndpont"
+				exchange-pattern="one-way" method="POST">
+				<http:body-to-parameter-map-transformer>
+				</http:body-to-parameter-map-transformer>
+				<custom-transformer class="com.armandorv.miw.eai.bookstore.impl.transformer.HttpToOrdersTransofmer" />
+			</http:inbound-endpoint>
+		</composite-source>
+
+		<foreach doc:name="For Each Order in collection : verify">
+			<logger message=" Received order #[message:payload]" level="INFO" doc:name="Logger" />
+			<component doc:name="stockVerifier">
+				<spring-object bean="stockVerifierComponent" />
+			</component>
+		</foreach>
+
+		<collection-splitter doc:name="Collection Splitter" enableCorrelation="ALWAYS" />
+
+		<choice doc:name="Choice">
+			<when expression="payload.isInStock()">
+				<logger message="Order #[message:payload] is in stock ..." level="INFO" doc:name="Logger" />
+				<vm:outbound-endpoint path="processOrderInStock" doc:name="toProcessOrderInStock" />
+			</when>
+			<otherwise>
+				<logger message="Order #[message:payload] is not in stock ..." level="INFO" doc:name="Logger" />
+				<vm:outbound-endpoint path="refuseByNotStock" doc:name="toRefuseByNotStock" />
+			</otherwise>
+		</choice>
+	</flow>
+
+	<flow name="processOrderInStock" doc:name="processOrderInStock">
+
+		<description>
+			This process is in chaarge of decrement the stock of the
+			ordered book and
+			aggregate all orders generating a
+			coollection.
+		</description>
+
+		<vm:inbound-endpoint path="processOrderInStock" doc:name="fromCheckOrderStock" />
+
+		<logger message="Cheking stock for Order #[message:payload]" level="INFO" doc:name="Logger" />
+
+		<component doc:name="orderProcessor">
+			<spring-object bean="orderProcessorComponent" />
+		</component>
+
+		<logger message="Building shipment (orders aggregattion)" level="INFO" doc:name="Logger" />
+
+		<custom-aggregator class="com.armandorv.miw.eai.bookstore.impl.aggregator.OrdersAggregator"
+			doc:name="OrdersToShipment">
+		</custom-aggregator>
+
+		<choice doc:name="Choice">
+			<when expression="payload.getCustomer().hasLoan()">
+				<vm:outbound-endpoint path="manageLoanRequest" doc:name="toManageLoanRequest" />
+			</when>
+			<otherwise>
+				<vm:outbound-endpoint path="generateInvoice" doc:name="toGenerateInvoice" />
+			</otherwise>
+		</choice>
+	</flow>
+
+	<flow name="manageLoanRequest" doc:name="manageLoanRequest">
+		<vm:inbound-endpoint path="manageLoanRequest" doc:name="fromProcessOrderInStock" />
+		<component doc:name="loanOfficer">
+			<spring-object bean="loanBrokerComponent" />
+		</component>
+		<choice doc:name="Choice">
+			<when expression="payload.getCustomer().hasLoanAccepted()">
+				<logger message="Loan accepted for shipment: #[message:payload]" level="INFO" doc:name="Logger" />
+				<all doc:name="All">
+					<processor-chain>
+						<component doc:name="loanNotifierComponent">
+							<spring-object bean="loanNotifierComponent" />
+						</component>
+
+						<smtp:outbound-endpoint name="smtpLoanNotificationsOutboundEndpont" connector-ref="gmailConnector"
+							host="mail.google.com" user="armandomiweai" from="notifications.bookstore@gmail.com" password="armandomiweai"
+							subject="Armando's Bookstore - Notification" to="payload.getCustomer().getMail()" doc:name="SMTP" />
+					</processor-chain>
+					<vm:outbound-endpoint path="generateInvoice" doc:name="toGenerateInvoice" />
+				</all>
+			</when>
+			<otherwise>
+				<logger message="Loan for shipment: #[message:payload] has been denied." level="INFO" doc:name="Logger" />
+				<vm:outbound-endpoint path="generateInvoice" doc:name="toGenerateInvoice" />
+			</otherwise>
+		</choice>
+	</flow>
+
+	<flow name="generateInvoice" doc:name="generateInvoice">
+
+		<vm:inbound-endpoint path="generateInvoice" doc:name="fromProcessOrderInStock | fromManageLoanRequest" />
+
+		<logger message="Generating invoice for Shipment #[message:payload]" level="INFO" doc:name="Logger" />
+
+		<component doc:name="invoiceGenerator">
+			<spring-object bean="invoiceGeneratorComponent" />
+		</component>
+
+		<logger message="Generated invoice for #[message:payload]" level="INFO" doc:name="Logger" />
+		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set recipient" />
+
+		<all doc:name="All">
+			<processor-chain>
+				<expression-transformer expression="payload.getInvoice()" doc:name="ShipmentToInvoice" />
+				<transformer ref="invoice2XmlTransformer" doc:name="Invocie to XML" />
+
+				<all doc:name="All">
+					<smtp:outbound-endpoint name="smtpInvoicesOutboundEndpont" connector-ref="gmailConnector"
+						host="smtp.gmail.com" user="armandomiweai" from="invoices.bookstore@gmail.com" password="armandomiweai2013"
+						mimeType="text/html" subject="Armando's Bookstore - Invoice" to="#[variable:recipient]" doc:name="SMTP">
+						<transformer ref="invoiceXsltTransformer" doc:name="XmlInvoiceToHtml" />
+					</smtp:outbound-endpoint>
+
+					<file:outbound-endpoint name="fileInvoicesOutboundEndpont" connector-ref="fileOutputConnector"
+						path="/home/armandorv/mule/files/output/invoices" doc:name="File" />
+				</all>
+			</processor-chain>
+
+			<vm:outbound-endpoint path="sendOrders" doc:name="toSendOrders" />
+		</all>
+	</flow>
+
+	<flow name="sendOrders" doc:name="sendOrders">
+		<vm:inbound-endpoint path="sendOrders" doc:name="fromProcessOrderInStock" />
+
+		<logger message="Preparing dispatch note for shipment: #[message:payload]." level="INFO" doc:name="Logger" />
+
+		<component doc:name="vipVerifierComponent">
+			<spring-object bean="vipVerifierComponent" />
+		</component>
+
+		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set recipient" />
+
+		<transformer ref="invoice2XmlTransformer" doc:name="Invocie to XML" />
+
+		<choice doc:name="Choice">
+
+			<!-- Send express note -->
+			<when expression="payload.isExpress()">
+				<logger message="Sending express dispath note ..." level="INFO" doc:name="Logger" />
+
+				<all doc:name="All">
+					<smtp:outbound-endpoint name="smtpExpressDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
+						host="mail.google.com" user="armandomiweai" from="express.dispatch.bookstore@gmail.com" password="armandomiweai2013"
+						subject="Armando's Bookstore - Express Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
+					</smtp:outbound-endpoint>
+
+					<file:outbound-endpoint name="fileExpressDispatchNoteOutboundEndpont" connector-ref="fileOutputConnector"
+						path="/home/armandorv/mule/files/output/expressDispatch" doc:name="File" />
+				</all>
+			</when>
+
+			<!-- Send ordinary note -->
+			<otherwise>
+				<logger message="Sending ordniary dispath note ..." level="INFO" doc:name="Logger" />
+				<all doc:name="All">
+					<smtp:outbound-endpoint name="smtpDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
+						host="mail.google.com" user="armandomiweai" from="dispatchs.bookstore@gmail.com" password="armandomiweai2013"
+						subject="Armando's Bookstore - Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
+					</smtp:outbound-endpoint>
+
+					<file:outbound-endpoint name="fileDispatchNoteOutboundEndpont" connector-ref="fileOutputConnector"
+						path="/home/armandorv/mule/files/output/ordinaryDispatchs" doc:name="File" />
+				</all>
+			</otherwise>
+		</choice>
+	</flow>
+
+	<flow name="refuseByNotStock" doc:name="refuseByNotStock">
+		<vm:inbound-endpoint path="refuseByNotStock" doc:name="VM" />
+
+		<logger message="Refusing order #[message:payload] " level="INFO" doc:name="Logger" />
+
+		<component doc:name="orderRefuser">
+			<spring-object bean="orderRefuserComponent" />
+		</component>
+
+		<logger message="Sending notification #[message:payload] " level="INFO" doc:name="Logger" />
+
+		<smtp:outbound-endpoint name="smtpRefusementNotificationsOutboundEndpont" connector-ref="gmailConnector"
+			host="mail.google.com" user="armandomiweai" from="notifications.bookstore@gmail.com" password="armandomiweai2013"
+			subject="Armando's Bookstore - Notification" to="payload.getCustomer().getMail()" doc:name="SMTP">
+		</smtp:outbound-endpoint>
+	</flow>
+
+	<!-- ****************************** Invoice Transformer ********************** -->
+	
+	<mulexml:object-to-xml-transformer name="invoice2XmlTransformer" encoding="UTF-8">
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Invoice" name="invoice" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Book" name="book" />
+	</mulexml:object-to-xml-transformer>
+
+	<mulexml:xslt-transformer name="invoiceXsltTransformer" encoding="UTF-8" outputEncoding="UTF-8"
+		xsl-file="META-INF/xslt/invoice.xslt"/>
+
+	<!-- ****************************** Shipment Transformers ********************** -->
+	
+	<mulexml:object-to-xml-transformer name="shipment2XmlTransformer" encoding="UTF-8">
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Shipment" name="shipment" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Customer" name="customer" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Order" name="order" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Book" name="book" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Invoice" name="invoice" />
+	</mulexml:object-to-xml-transformer>
+
+</mule>
