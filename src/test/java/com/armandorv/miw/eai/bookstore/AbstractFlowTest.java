@@ -50,8 +50,6 @@ public abstract class AbstractFlowTest extends FunctionalTestCase {
 				ICustomerService.class);
 		bookService = muleContext.getRegistry().lookupObject(
 				IBookService.class);
-//		shipmentService = muleContext.getRegistry().lookupObject(
-//				IShipmentService.class);
 
 		armando = customerService.findCusomter("62789475D");
 
@@ -62,8 +60,6 @@ public abstract class AbstractFlowTest extends FunctionalTestCase {
 
 	protected Order springInAction(int amount) {
 		Order order = new Order(springInAction, amount);
-
-		armando.setId(1L);
 		order.setCustomer(armando);
 		return order;
 	}

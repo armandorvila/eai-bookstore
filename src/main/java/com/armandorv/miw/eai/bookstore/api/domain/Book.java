@@ -37,7 +37,7 @@ public class Book {
 	}
 	
 	public void decrementStock(int amount){
-		stock += amount;
+		stock -= amount;
 	}
 
 	public Long getId() {

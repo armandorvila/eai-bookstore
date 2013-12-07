@@ -1,6 +1,7 @@
 package com.armandorv.miw.eai.bookstore.impl.aggregator;
 
 import java.util.Iterator;
+import java.util.UUID;
 
 import org.mule.DefaultMuleEvent;
 import org.mule.DefaultMuleMessage;
@@ -36,6 +37,7 @@ public class OrdersAggregator extends AbstractAggregator {
 					throws AggregationException {
 
 				Shipment shipment = new Shipment();
+				shipment.setShipmentNumber(UUID.randomUUID().toString());
 
 				try {
 					for (Iterator<MuleEvent> iterator = events.iterator(); iterator

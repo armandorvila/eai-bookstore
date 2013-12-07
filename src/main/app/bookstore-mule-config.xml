@@ -27,7 +27,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 		<spring:bean id="orderProcessorComponent" class="com.armandorv.miw.eai.bookstore.impl.component.OrderProcessor" />
 		<spring:bean id="orderRefuserComponent" class="com.armandorv.miw.eai.bookstore.impl.component.OrderRefuser" />
 		<spring:bean id="loanBrokerComponent" class="com.armandorv.miw.eai.bookstore.impl.component.LoanBroker" />
-		<spring:bean id="vipVerifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.VipVerifier" />
+		<spring:bean id="vipVerifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.ShipmentManager" />
 		<spring:bean id="invoiceGeneratorComponent" class="com.armandorv.miw.eai.bookstore.impl.component.InvoiceGenerator" />
 		<spring:bean id="loanNotifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.LoanNotifier" />
 	</spring:beans>
@@ -144,22 +144,32 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 	<flow name="manageLoanRequest" doc:name="manageLoanRequest">
 		<vm:inbound-endpoint path="manageLoanRequest" doc:name="fromProcessOrderInStock" />
+
 		<component doc:name="loanOfficer">
 			<spring-object bean="loanBrokerComponent" />
 		</component>
+
 		<choice doc:name="Choice">
 			<when expression="payload.getCustomer().hasLoanAccepted()">
+
 				<logger message="Loan accepted for shipment: #[message:payload]" level="INFO" doc:name="Logger" />
+
 				<all doc:name="All">
 					<processor-chain>
-						<component doc:name="loanNotifierComponent">
+						<component doc:name="loanNotifierComponent" doc:description="Build the notification and persist it.">
 							<spring-object bean="loanNotifierComponent" />
 						</component>
 
+						<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set recipient" />
+
+						<transformer ref="notification2XmlTransformer" />
+						<transformer ref="notificationXsltTransformer" />
+
 						<smtp:outbound-endpoint name="smtpLoanNotificationsOutboundEndpont" connector-ref="gmailConnector"
-							host="mail.google.com" user="armandomiweai" from="notifications.bookstore@gmail.com" password="armandomiweai"
-							subject="Armando's Bookstore - Notification" to="payload.getCustomer().getMail()" doc:name="SMTP" />
+							host="smtp.gmail.com" user="armandomiweai" from="notifications.bookstore@gmail.com" password="armandomiweai2013"
+							subject="Armando's Bookstore - Notification" to="#[variable:recipient]" doc:name="SMTP" />
 					</processor-chain>
+
 					<vm:outbound-endpoint path="generateInvoice" doc:name="toGenerateInvoice" />
 				</all>
 			</when>
@@ -182,6 +192,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 		<logger message="Generated invoice for #[message:payload]" level="INFO" doc:name="Logger" />
 		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set recipient" />
+		<set-variable value="#[message.payload.invoice.number]" variableName="invoiceNumber" doc:name="Set recipient" />
 
 		<all doc:name="All">
 			<processor-chain>
@@ -196,7 +207,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 					</smtp:outbound-endpoint>
 
 					<file:outbound-endpoint name="fileInvoicesOutboundEndpont" connector-ref="fileOutputConnector"
-						path="/home/armandorv/mule/files/output/invoices" doc:name="File" />
+						path="/home/armandorv/mule/files/output/invoices" outputPattern="#[variable:invoiceNumber]" doc:name="File" />
 				</all>
 			</processor-chain>
 
@@ -214,37 +225,47 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 		</component>
 
 		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set recipient" />
-
-		<transformer ref="invoice2XmlTransformer" doc:name="Invocie to XML" />
+		<set-variable value="#[message.payload.shipmentNumber]" variableName="shipmentNumber" doc:name="Set recipient" />
 
 		<choice doc:name="Choice">
-
 			<!-- Send express note -->
 			<when expression="payload.isExpress()">
-				<logger message="Sending express dispath note ..." level="INFO" doc:name="Logger" />
-
 				<all doc:name="All">
-					<smtp:outbound-endpoint name="smtpExpressDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
-						host="mail.google.com" user="armandomiweai" from="express.dispatch.bookstore@gmail.com" password="armandomiweai2013"
-						subject="Armando's Bookstore - Express Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
-					</smtp:outbound-endpoint>
+					<logger message="Sending express dispath note ..." level="INFO" doc:name="Logger" />
 
-					<file:outbound-endpoint name="fileExpressDispatchNoteOutboundEndpont" connector-ref="fileOutputConnector"
-						path="/home/armandorv/mule/files/output/expressDispatch" doc:name="File" />
+					<processor-chain>
+						<transformer ref="shipment2XmlTransformer" doc:name="Invocie to XML" />
+						<smtp:outbound-endpoint name="smtpExpressDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
+							host="smtp.gmail.com" user="armandomiweai" from="express.dispatch.bookstore@gmail.com" password="armandomiweai2013"
+							subject="Armando's Bookstore - Express Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
+							<transformer ref="shipmentXsltTransformer" />
+						</smtp:outbound-endpoint>
+					</processor-chain>
+					<processor-chain>
+						<transformer ref="shipment2XmlTransformer" doc:name="Invocie to XML" />
+						<file:outbound-endpoint name="fileExpressDispatchNoteOutboundEndpont" connector-ref="fileOutputConnector"
+							path="/home/armandorv/mule/files/output/expressDispatch" outputPattern="#[variable:shipmentNumber]" doc:name="File" />
+					</processor-chain>
 				</all>
 			</when>
 
 			<!-- Send ordinary note -->
 			<otherwise>
-				<logger message="Sending ordniary dispath note ..." level="INFO" doc:name="Logger" />
 				<all doc:name="All">
-					<smtp:outbound-endpoint name="smtpDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
-						host="mail.google.com" user="armandomiweai" from="dispatchs.bookstore@gmail.com" password="armandomiweai2013"
-						subject="Armando's Bookstore - Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
-					</smtp:outbound-endpoint>
-
-					<file:outbound-endpoint name="fileDispatchNoteOutboundEndpont" connector-ref="fileOutputConnector"
-						path="/home/armandorv/mule/files/output/ordinaryDispatchs" doc:name="File" />
+					<logger message="Sending ordniary dispath note ..." level="INFO" doc:name="Logger" />
+					<processor-chain>
+						<transformer ref="shipment2XmlTransformer" doc:name="Shipment to XML" />
+						<smtp:outbound-endpoint name="smtpDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
+							host="smtp.gmail.com" user="armandomiweai" from="dispatchs.bookstore@gmail.com" password="armandomiweai2013"
+							subject="Armando's Bookstore - Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
+							<transformer ref="shipmentXsltTransformer" />
+						</smtp:outbound-endpoint>
+					</processor-chain>
+					<processor-chain>
+						<transformer ref="shipment2XmlTransformer" doc:name="Shipment to XML" />
+						<file:outbound-endpoint name="fileDispatchNoteOutboundEndpont" connector-ref="fileOutputConnector"
+							path="/home/armandorv/mule/files/output/ordinaryDispatchs" outputPattern="#[variable:shipmentNumber]" doc:name="File" />
+					</processor-chain>
 				</all>
 			</otherwise>
 		</choice>
@@ -261,24 +282,29 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 		<logger message="Sending notification #[message:payload] " level="INFO" doc:name="Logger" />
 
-		<smtp:outbound-endpoint name="smtpRefusementNotificationsOutboundEndpont" connector-ref="gmailConnector"
-			host="mail.google.com" user="armandomiweai" from="notifications.bookstore@gmail.com" password="armandomiweai2013"
-			subject="Armando's Bookstore - Notification" to="payload.getCustomer().getMail()" doc:name="SMTP">
-		</smtp:outbound-endpoint>
+		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set recipient" />
+
+		<processor-chain>
+			<transformer ref="notification2XmlTransformer" />
+			<transformer ref="notificationXsltTransformer" />
+
+			<smtp:outbound-endpoint name="smtpRefusementNotificationsOutboundEndpont" connector-ref="gmailConnector"
+				host="smtp.gmail.com" user="armandomiweai" from="notifications.bookstore@gmail.com" password="armandomiweai2013"
+				subject="Armando's Bookstore - Notification" to="#[variable:recipient]" doc:name="SMTP" />
+		</processor-chain>
 	</flow>
 
 	<!-- ****************************** Invoice Transformer ********************** -->
-	
+
 	<mulexml:object-to-xml-transformer name="invoice2XmlTransformer" encoding="UTF-8">
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Invoice" name="invoice" />
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Book" name="book" />
 	</mulexml:object-to-xml-transformer>
 
 	<mulexml:xslt-transformer name="invoiceXsltTransformer" encoding="UTF-8" outputEncoding="UTF-8"
-		xsl-file="META-INF/xslt/invoice.xslt"/>
+		xsl-file="META-INF/xslt/invoice.xslt" />
 
 	<!-- ****************************** Shipment Transformers ********************** -->
-	
 	<mulexml:object-to-xml-transformer name="shipment2XmlTransformer" encoding="UTF-8">
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Shipment" name="shipment" />
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Customer" name="customer" />
@@ -287,4 +313,15 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Invoice" name="invoice" />
 	</mulexml:object-to-xml-transformer>
 
+	<mulexml:xslt-transformer name="shipmentXsltTransformer" encoding="UTF-8" outputEncoding="UTF-8"
+		xsl-file="META-INF/xslt/shipment.xslt" />
+
+	<!-- ****************************** Notification Transformers ********************** -->
+	<mulexml:object-to-xml-transformer name="notification2XmlTransformer" encoding="UTF-8">
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Notification" name="notification" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Customer" name="customer" />
+	</mulexml:object-to-xml-transformer>
+
+	<mulexml:xslt-transformer name="notificationXsltTransformer" encoding="UTF-8" outputEncoding="UTF-8"
+		xsl-file="META-INF/xslt/notification.xslt" />
 </mule>

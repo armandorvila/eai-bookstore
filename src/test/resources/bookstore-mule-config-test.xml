@@ -4,8 +4,8 @@
 	xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core"
 	version="CE-3.4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="
-http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
 
@@ -19,7 +19,7 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 		<spring:bean id="orderProcessorComponent" class="com.armandorv.miw.eai.bookstore.impl.component.OrderProcessor" />
 		<spring:bean id="orderRefuserComponent" class="com.armandorv.miw.eai.bookstore.impl.component.OrderRefuser" />
 		<spring:bean id="loanBrokerComponent" class="com.armandorv.miw.eai.bookstore.impl.component.LoanBroker" />
-		<spring:bean id="vipVerifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.VipVerifier" />
+		<spring:bean id="vipVerifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.ShipmentManager" />
 		<spring:bean id="invoiceGeneratorComponent" class="com.armandorv.miw.eai.bookstore.impl.component.InvoiceGenerator" />
 		<spring:bean id="loanNotifierComponent" class="com.armandorv.miw.eai.bookstore.impl.component.LoanNotifier" />
 	</spring:beans>
@@ -42,7 +42,191 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 
 	<!-- ******************* Application flows ******************************** -->
 
-	<flow name="checkOrderStock" doc:name="checkOrderStock">
+	<!-- ****************************** Invoice Transformer ********************** -->
+
+	<mulexml:object-to-xml-transformer name="invoice2XmlTransformer" encoding="UTF-8" doc:name="Object to XML">
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Invoice" name="invoice" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Book" name="book" />
+	</mulexml:object-to-xml-transformer>
+
+	<mulexml:xslt-transformer name="invoiceXsltTransformer" encoding="UTF-8" outputEncoding="UTF-8" doc:name="XSLT">
+		<mulexml:xslt-text>
+			<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+				<xsl:output method="html" />
+				<xsl:param name="number" />
+				<xsl:param name="date" />
+				<xsl:param name="importe" />
+
+				<xsl:template match="/">
+
+					Armando 's Bookstore
+					<br />
+					<p>This is an invoice generated from Armando 's bookstore.</p>
+					Invoice
+					<br />
+					<ul>
+						<li>
+							Number:
+							<xsl:value-of select="/invoice/number" />
+						</li>
+						<li>
+							Date:
+							<xsl:value-of select="/invoice/date" />
+						</li>
+					</ul>
+					Books invoiced
+					<br />
+					<table>
+						<tr>
+							<th>ISBN</th>
+							<th>Name</th>
+						</tr>
+
+						<xsl:for-each select="/invoice/books/book">
+							<tr>
+								<td>
+									<xsl:value-of select="isbn" />
+								</td>
+								<td>
+									<xsl:value-of select="name" />
+								</td>
+							</tr>
+						</xsl:for-each>
+
+						<tr>
+							<td>
+								Importe :
+								<xsl:value-of select="/invoice/importe" />
+							</td>
+						</tr>
+					</table>
+
+				</xsl:template>
+
+			</xsl:stylesheet>
+
+		</mulexml:xslt-text>
+	</mulexml:xslt-transformer>
+
+	<!-- ****************************** Shipment Transformers ********************** -->
+
+	<mulexml:object-to-xml-transformer name="shipment2XmlTransformer" encoding="UTF-8" doc:name="Object to XML">
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Shipment" name="shipment" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Customer" name="customer" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Order" name="order" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Book" name="book" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Invoice" name="invoice" />
+	</mulexml:object-to-xml-transformer>
+
+	<mulexml:xslt-transformer name="shipmentXsltTransformer" encoding="UTF-8" outputEncoding="UTF-8"
+		xsl-file="META-INF/xslt/shipment.xslt" doc:name="XSLT">
+		<mulexml:xslt-text>
+			<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+				<xsl:template match="/">
+					<br>Armando 's Bookstore </br>
+
+					<p>This is a shipment note generated from Armando 's bookstore.</p>
+
+					<br>Shipment </br>
+
+					Shipment type:
+					<xsl:if test="/shipment/express = true">
+						Express
+					</xsl:if>
+					<xsl:if test="/shipment/express = false">
+						Ordinary
+					</xsl:if>
+
+					<br>Customer </br>
+					<ul>
+						<li>
+							Nif:
+							<xsl:value-of select="/shipment/customer/nif" />
+						</li>
+						<li>
+							Name:
+							<xsl:value-of select="/shipment/customer/name" />
+						</li>
+						<li>
+							Address:
+							<xsl:value-of select="/shipment/customer/address" />
+						</li>
+						<li>
+							mail:
+							<xsl:value-of select="/shipment/customer/mail" />
+						</li>
+					</ul>
+
+					<br>Orders</br>
+					<table>
+						<tr>
+							<th>Order ID</th>
+							<th>Book</th>
+							<th>Amount</th>
+						</tr>
+						<xsl:for-each select="/shipment/orders/order">
+							<tr>
+								<td>
+									<xsl:value-of select="id" />
+								</td>
+								<td>
+									<xsl:value-of select="book/isbn" />
+								</td>
+								<td>
+									<xsl:value-of select="amount" />
+								</td>
+							</tr>
+						</xsl:for-each>
+						<tr>
+							<td>
+								Importe :
+								<xsl:value-of select="/invoice/importe" />
+							</td>
+						</tr>
+					</table>
+					<br>Invoice </br>
+					<ul>
+						<li>
+							Invoice number:
+							<xsl:value-of select="/shipment/invoice/number" />
+						</li>
+						<li>
+							Amount ($):
+							<xsl:value-of select="/shipment/invoice/importe" />
+						</li>
+					</ul>
+				</xsl:template>
+			</xsl:stylesheet>
+		</mulexml:xslt-text>
+	</mulexml:xslt-transformer>
+
+	<mulexml:object-to-xml-transformer name="notification2XmlTransformer" encoding="UTF-8" doc:name="Object to XML">
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Notification" name="notification" />
+		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Customer" name="customer" />
+	</mulexml:object-to-xml-transformer>
+
+	<mulexml:xslt-transformer name="notificationXsltTransformer" encoding="UTF-8" outputEncoding="UTF-8"
+		xsl-file="META-INF/xslt/notification.xslt" doc:name="XSLT">
+		<mulexml:xslt-text>
+			<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+				<xsl:template match="/">
+					<br>
+						Armando 's Bookstore -
+						<xsl:value-of select="/notification/subject" />
+					</br>
+					<p>
+						Dear
+						<xsl:value-of select="/notification/customer/name" />
+						:
+					</p>
+					<p>
+						<xsl:value-of select="/notification/message" />
+					</p>
+				</xsl:template>
+			</xsl:stylesheet>
+		</mulexml:xslt-text>
+	</mulexml:xslt-transformer>
+    <flow name="checkOrderStock" doc:name="checkOrderStock">
 
 		<description>
 			This process receives a collections of orders, then
@@ -77,8 +261,7 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 			</otherwise>
 		</choice>
 	</flow>
-
-	<flow name="processOrderInStock" doc:name="processOrderInStock">
+    <flow name="processOrderInStock" doc:name="processOrderInStock">
 
 		<description>
 			This process is in chaarge of decrement the stock of the
@@ -110,8 +293,7 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 			</otherwise>
 		</choice>
 	</flow>
-
-	<flow name="manageLoanRequest" doc:name="manageLoanRequest">
+    <flow name="manageLoanRequest" doc:name="manageLoanRequest">
 		<vm:inbound-endpoint path="manageLoanRequest" doc:name="fromProcessOrderInStock" />
 		<component doc:name="loanOfficer">
 			<spring-object bean="loanBrokerComponent" />
@@ -135,8 +317,7 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 			</otherwise>
 		</choice>
 	</flow>
-
-	<flow name="generateInvoice" doc:name="generateInvoice">
+    <flow name="generateInvoice" doc:name="generateInvoice">
 
 		<vm:inbound-endpoint path="generateInvoice" doc:name="fromProcessOrderInStock | fromManageLoanRequest" />
 
@@ -161,11 +342,8 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 
 			<vm:outbound-endpoint path="sendOrders" doc:name="toSendOrders" />
 		</all>
-
-		<catch-exception-strategy enableNotifications="true" />
 	</flow>
-
-	<flow name="sendOrders" doc:name="sendOrders">
+    <flow name="sendOrders" doc:name="sendOrders">
 		<vm:inbound-endpoint path="sendOrders" doc:name="fromProcessOrderInStock" />
 
 		<logger message="Preparing dispatch note for shipment: #[message:payload]." level="INFO" doc:name="Logger" />
@@ -179,9 +357,8 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 			<!-- Send express note -->
 			<when expression="payload.isExpress()">
 				<logger message="Sending express dispath note ..." level="INFO" doc:name="Logger" />
-
 				<all doc:name="All">
-					<outbound-endpoint ref="smtpExpressDispatchNoteOutboundEndpont" doc:name="smtpNotificationsOutboundEndpont" />
+					<outbound-endpoint ref="smtpExpressDispatchNoteOutboundEndpont" doc:name="smtpExpressDispatchNoteOutboundEndpont" />
 					<outbound-endpoint ref="fileExpressDispatchNoteOutboundEndpont" doc:name="fileExpressDispatchNoteOutboundEndpont" />
 				</all>
 			</when>
@@ -189,19 +366,14 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 			<!-- Send ordinary note -->
 			<otherwise>
 				<logger message="Sending ordniary dispath note ..." level="INFO" doc:name="Logger" />
-
-				<outbound-endpoint ref="smtpDispatchNoteOutboundEndpont" doc:name="smtpDispatchNoteOutboundEndpont" />
-				<outbound-endpoint ref="fileDispatchNoteOutboundEndpont" doc:name="fileDispatchNoteOutboundEndpont" />
+				<all doc:name="All">
+					<outbound-endpoint ref="smtpDispatchNoteOutboundEndpont" doc:name="smtpDispatchNoteOutboundEndpont" />
+					<outbound-endpoint ref="fileDispatchNoteOutboundEndpont" doc:name="fileDispatchNoteOutboundEndpont" />
+				</all>
 			</otherwise>
 		</choice>
-
-		<all doc:name="All">
-			<outbound-endpoint ref="smtpDispatchNoteOutboundEndpont" doc:name="smtpDispatchNoteOutboundEndpont" />
-			<outbound-endpoint ref="fileDispatchNoteOutboundEndpont" doc:name="fileDispatchNoteOutboundEndpont" />
-		</all>
 	</flow>
-
-	<flow name="refuseByNotStock" doc:name="refuseByNotStock">
+    <flow name="refuseByNotStock" doc:name="refuseByNotStock">
 		<vm:inbound-endpoint path="refuseByNotStock" doc:name="VM" />
 
 		<logger message="Refusing order #[message:payload] " level="INFO" doc:name="Logger" />
@@ -212,72 +384,6 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 
 		<logger message="Sending notification #[message:payload] " level="INFO" doc:name="Logger" />
 
-		<!-- <all doc:name="All"> -->
 		<outbound-endpoint ref="smtpNotificationsOutboundEndpont" doc:name="smtpNotificationsOutboundEndpont" />
-		<!-- </all> -->
 	</flow>
-
-	<!-- ****************************** Invoice to Html Transformation ********************** -->
-
-	<mulexml:xslt-transformer name="invoiceXsltTransformer" encoding="UTF-8">
-		<mulexml:xslt-text>
-			<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-				<xsl:output method="html" />
-				<xsl:param name="number" />
-				<xsl:param name="date" />
-				<xsl:param name="importe" />
-
-				<xsl:template match="/">
-
-					Armando 's Bookstore
-					<br />
-					<p>This is an invoice generated from Armando 's bookstore.</p>
-					Invoice
-					<br />
-					<ul>
-						<li>
-							Number:
-							<xsl:value-of select="/invoice/number" />
-						</li>
-						<li>
-							Date:
-							<xsl:value-of select="/invoice/date" />
-						</li>
-					</ul>
-					Books invoiced
-					<br />
-					<table>
-						<tr>
-							<th>ISBN</th>
-							<th>Name</th>
-						</tr>
-
-						<xsl:for-each select="/invoice/books/book">
-							<td>
-								<xsl:value-of select="isbn" />
-							</td>
-							<td>
-								<xsl:value-of select="name" />
-							</td>
-						</xsl:for-each>
-
-						<tr>
-							<td>
-								Importe :
-								<xsl:value-of select="/invoice/importe" />
-							</td>
-						</tr>
-					</table>
-
-				</xsl:template>
-
-			</xsl:stylesheet>
-		</mulexml:xslt-text>
-
-	</mulexml:xslt-transformer>
-
-	<mulexml:object-to-xml-transformer name="invoice2XmlTransformer" encoding="UTF-8">
-		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Invoice" name="invoice" />
-		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Book" name="book" />
-	</mulexml:object-to-xml-transformer>
 </mule>

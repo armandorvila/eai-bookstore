@@ -8,7 +8,7 @@ import com.armandorv.miw.eai.bookstore.api.domain.Shipment;
 import com.armandorv.miw.eai.bookstore.api.service.IInvoiceService;
 
 public class InvoiceGenerator {
-	
+
 	@Autowired
 	private IInvoiceService invoiceService;
 
@@ -20,16 +20,11 @@ public class InvoiceGenerator {
 				invoice.addBook(order.getBook());
 			}
 		}
-
+		// FIXME Model relationship between invoices and orders. Return the
+		// persistent invoice when save.
 		invoice.calcularImporte();
-		try {
 		invoiceService.saveInvoice(invoice);
-		}
-		catch(Throwable t){
-			t.printStackTrace();
-			throw t;
-		}
-
+		invoice.setId(invoiceService.findByNumber(invoice.getNumber()).getId());
 		shipment.setInvoice(invoice);
 		return shipment;
 	}

@@ -16,6 +16,18 @@ public class InvoiceServiceTest extends AbstractServiceTest {
 	private IInvoiceService invoiceService;
 
 	@Test
+	public void testFind(){
+		Invoice invoice = invoiceService.find(1000L);
+		Assert.assertNotNull(invoice);
+	}
+	
+	@Test
+	public void testFindByNumber(){
+		Invoice invoice = invoiceService.findByNumber(invoiceService.find(1000L).getNumber());
+		Assert.assertNotNull(invoice);
+	}
+	
+	@Test
 	public void testSaveInvoice() {
 		Assert.assertNotNull(invoiceService);
 

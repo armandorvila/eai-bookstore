@@ -1,14 +1,15 @@
 package com.armandorv.miw.eai.bookstore.impl.service;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Date;
 import java.util.List;
 
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 import org.springframework.stereotype.Service;
@@ -29,13 +30,20 @@ public class ShipmentServiceImpl extends JdbcDaoSupport implements
 	@Value("${bookstore.sql.findShipmentsByCustomerSql}")
 	private String findShipmentsByCustomerSql;
 
+	@Value("${bookstore.sql.saveShipmentSql}")
+	private String saveShipmentSql;
+
+	@Value("${bookstore.sql.nextId}")
+	private String nextId;
+
 	@Autowired
 	public ShipmentServiceImpl(DataSource dataSource) {
 		super.setDataSource(dataSource);
 	}
 
 	@Override
-	public List<Shipment> findShipmentsByCustomer(Customer customer, Date from) {
+	public List<Shipment> findShipmentsByCustomer(Customer customer,
+			java.util.Date from) {
 		return super.getJdbcTemplate().query(this.findShipmentsByCustomerSql,
 				new Object[] { from, customer.getId() }, rowMapper);
 	}
@@ -48,6 +56,7 @@ public class ShipmentServiceImpl extends JdbcDaoSupport implements
 
 			shipment.setId(rs.getLong("id"));
 			shipment.setDate(rs.getDate("shipment_date"));
+			shipment.setShipmentNumber(rs.getString("shipment_number"));
 			shipment.setExpress(rs.getBoolean("express"));
 
 			Customer customer = new Customer();
@@ -70,6 +79,28 @@ public class ShipmentServiceImpl extends JdbcDaoSupport implements
 
 			return shipment;
 		}
+	}
+
+	@Override
+	public void save(final Shipment shipment) {
+		super.getJdbcTemplate().update(saveShipmentSql,
+				new PreparedStatementSetter() {
+
+					public void setValues(PreparedStatement ps)
+							throws SQLException {
+						ps.setLong(1, nextId());
+						ps.setDate(2, new java.sql.Date(shipment.getDate()
+								.getTime()));
+						ps.setBoolean(3, shipment.isExpress());
+						ps.setString(4, shipment.getShipmentNumber());
+						ps.setLong(5, shipment.getCustomer().getId());
+						ps.setLong(6, shipment.getInvoice().getId());
+					}
+				});
+	}
+
+	private long nextId() {
+		return super.getJdbcTemplate().queryForInt(nextId);
 	}
 
 }

@@ -16,6 +16,7 @@ import com.armandorv.miw.eai.bookstore.api.service.IBookService;
  */
 public class OrderRefuser {
 
+	private static final String SUBJECT = "Order refused";
 	@Autowired
 	private IBookService bookService;
 
@@ -28,8 +29,9 @@ public class OrderRefuser {
 		Notification notification = new Notification();
 
 		notification.setCustomer(order.getCustomer());
-		notification.setMessage("The order for the book " + order.getBook()
-				+ " has not been delivered cause book is not in stock.");
+		notification.setSubject(SUBJECT);
+		notification.setMessage("The order for the book " + order.getBook().getName()
+				+ " has not been delivered cause such book is not in stock.");
 		return notification;
 	}
 

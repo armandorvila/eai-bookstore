@@ -11,4 +11,8 @@ import com.armandorv.miw.eai.bookstore.api.domain.Invoice;
 public interface IInvoiceService {
 
 	void saveInvoice(Invoice invoice);
+
+	Invoice find(long id);
+
+	Invoice findByNumber(String number);
 }

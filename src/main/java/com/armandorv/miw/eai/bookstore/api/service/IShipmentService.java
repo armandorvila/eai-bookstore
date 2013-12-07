@@ -22,4 +22,6 @@ public interface IShipmentService {
 	 * @return
 	 */
 	List<Shipment> findShipmentsByCustomer(Customer customer, Date from);
+
+	void save(Shipment shipment);
 }

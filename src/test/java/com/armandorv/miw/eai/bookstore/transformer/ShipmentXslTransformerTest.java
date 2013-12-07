@@ -18,13 +18,16 @@ import org.mule.api.transformer.TransformerException;
 import org.mule.tck.junit4.FunctionalTestCase;
 
 import com.armandorv.miw.eai.bookstore.api.domain.Book;
+import com.armandorv.miw.eai.bookstore.api.domain.Customer;
 import com.armandorv.miw.eai.bookstore.api.domain.Invoice;
+import com.armandorv.miw.eai.bookstore.api.domain.Order;
+import com.armandorv.miw.eai.bookstore.api.domain.Shipment;
 
 
-public class InvoiceXslTransformerTest extends FunctionalTestCase {
+public class ShipmentXslTransformerTest extends FunctionalTestCase {
 
 	private static Logger logger = Logger
-			.getLogger(InvoiceXslTransformerTest.class);
+			.getLogger(ShipmentXslTransformerTest.class);
 
 	private Transformer xslTransformer;
 
@@ -35,9 +38,9 @@ public class InvoiceXslTransformerTest extends FunctionalTestCase {
 	@Before
 	public void setup() {
 		xmlTransformer = muleContext.getRegistry().lookupTransformer(
-				"invoice2XmlTransformer");
+				"shipment2XmlTransformer");
 		xslTransformer = muleContext.getRegistry().lookupTransformer(
-				"invoiceXsltTransformer");
+				"shipmentXsltTransformer");
 
 		Assert.assertNotNull(xmlTransformer);
 		Assert.assertNotNull(xslTransformer);
@@ -53,8 +56,21 @@ public class InvoiceXslTransformerTest extends FunctionalTestCase {
 		invoice.setNumber(UUID.randomUUID().toString());
 		invoice.setDate(new Date());
 		invoice.setImporte(40D);
+		
+		Customer customer = new Customer("Armando", "343434", "sdsdsds");
+		customer.setMail("hi@gmail.com");
+		
+		Shipment shipment = new Shipment();
+		shipment.setCustomer(customer);
+		shipment.addOrder(new Order(books.get(0), 2));
+		shipment.addOrder(new Order(books.get(1), 2));
+		
+		shipment.setDate(new Date());
+		shipment.setExpress(false);
+		shipment.setShipmentNumber(UUID.randomUUID().toString());
+		shipment.setInvoice(invoice);
 
-		source = new DefaultMuleMessage(invoice, muleContext);
+		source = new DefaultMuleMessage(shipment, muleContext);
 		Assert.assertNotNull(source.getPayload());
 	}
 
@@ -64,20 +80,22 @@ public class InvoiceXslTransformerTest extends FunctionalTestCase {
 	}
 
 	@Test
-	public void testTransformShipment() throws TransformerException, IOException {
+	public void testTransformInvoice() throws TransformerException, IOException {
 
-		String xmlInvoice = (String) xmlTransformer.transform(source);
+		String xmlShipment= (String) xmlTransformer.transform(source);
 		
-		Assert.assertNotNull(xmlInvoice);
-		Assert.assertTrue(xmlInvoice.contains("invoice"));
-		Assert.assertTrue(xmlInvoice.contains("book"));
+		Assert.assertNotNull(xmlShipment);
+		Assert.assertTrue(xmlShipment.contains("shipment"));
+		Assert.assertTrue(xmlShipment.contains("customer"));
+		Assert.assertTrue(xmlShipment.contains("invoice"));
+		Assert.assertTrue(xmlShipment.contains("book"));
 		
-		logger.info(xmlInvoice);
+		logger.info(xmlShipment);
 
-		byte[] htmlInvoice = (byte[]) xslTransformer.transform(xmlInvoice);
-		Assert.assertNotNull(htmlInvoice);
+		byte[] htmlShipment = (byte[]) xslTransformer.transform(xmlShipment);
+		Assert.assertNotNull(htmlShipment);
 
-		IOUtils.write(htmlInvoice, System.out);
+		IOUtils.write(htmlShipment, System.out);
 	}
 
 }
