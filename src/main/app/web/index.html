@@ -1,72 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Armando 's Bookstore</title>
-
 <meta charset="utf-8">
-<script type="text/javascript"
-	src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-
-<script>
-	$(document).ready(
-			function() {
-				$.getJSON("http://localhost:8090/books", function(json) {
-					$.each(json, function(index, value) {
-						var option = "<option value='" + value.isbn +"'>"
-								+ value.name + "</option>";
-						$(".booksCatalog").append(option);
-					});
-				});
-			});
-</script>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Bookstore.com</title>
+<meta name="description" content="">
+<meta name="viewport" content="width=device-width">
+<link rel="stylesheet" href="styles/bootstrap.css">
+<link rel="stylesheet" href="styles/main.css">
+<link rel="stylesheet" href="styles/famfamfam-flags.css">
 
 </head>
-<body>
-	<header>
-		<h1>Armando 's Bookstore</h1>
+<body data-ng-app="bookstoreApp" data-ng-controller="MainController">
+	<div data-ng-include="'views/navbar.html'"></div>
+
+	<header class="subhead jumbotron widget-head">
+		<h1 data-translate="main.title">Bookstore.com</h1>
+		<p data-translate="main.subtitle">Welcome to Bookstore.com!</p>
 	</header>
 
-	<nav></nav>
+	<div class="container">
+		<div data-ng-view=""></div>
+		<footer class="modal-footer footer">
+			<a href="https://twitter.com/armandorvila" class="btn-link">Twitter</a>
+			| <a href="https://www.linkedin.com/in/armandorv" class="btn-link">Linkedin</a>
+		</footer>
+	</div>
 
-	<aside></aside>
+	<script src="bower_components/modernizr/modernizr.js"></script>
+	<script src="bower_components/jquery/jquery.js"></script>
+	<script src="bower_components/angular/angular.js"></script>
+	<script src="bower_components/angular-route/angular-route.js"></script>
+	<script src="bower_components/angular-resource/angular-resource.js"></script>
+	<script src="bower_components/angular-cookies/angular-cookies.js"></script>
+	<script src="bower_components/angular-sanitize/angular-sanitize.js"></script>
+	<script src="bower_components/angular-translate/angular-translate.js"></script>
+	<script
+		src="bower_components/angular-translate-storage-cookie/angular-translate-storage-cookie.js"></script>
+	<script
+		src="bower_components/angular-translate-loader-static-files/angular-translate-loader-static-files.js"></script>
+	<script
+		src="bower_components/angular-dynamic-locale/src/tmhDinamicLocale.js"></script>
 
-	<section id="content">
-		<form id="orders" action="/orders" method="post">
+	<script src="scripts/app.js"></script>
+	<script src="scripts/controllers.js"></script>
 
-			<ul>
-				<li><label for="name" class="fieldLabel">Name : </label> <input
-					id="name" name="name" type="text" autocomplete="on" class="field"
-					maxlength="100" /></li>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/affix.js"></script>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/alert.js"></script>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/dropdown.js"></script>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/tooltip.js"></script>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/modal.js"></script>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/transition.js"></script>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/button.js"></script>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/popover.js"></script>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/carousel.js"></script>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/scrollspy.js"></script>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/collapse.js"></script>
+	<script
+		src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap/tab.js"></script>
+	<script src="bower_components/angular-bootstrap/ui-bootstrap.js"></script>
+	<script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
 
-				<li><label for="nif" class="fieldLabel">NIF : </label> <input
-					id="nif" name="nif" type="text" autocomplete="on" class="field"
-					maxlength="100" /></li>
-
-				<li><label for="address" class="fieldLabel">Address : </label>
-					<input id="address" name="address" type="text" autocomplete="on"
-					class="field" maxlength="100" /></li>
-
-				<li><label for="mail" class="fieldLabel">Mail : </label> <input
-					id="mail" name="mail" type="email" autocomplete="on" class="field"
-					maxlength="100" /></li>
-
-				<li><label for="loan" class="fieldLabel">Loan : </label> <input
-					id="loan" name="loan" type="checkbox" autocomplete="on"
-					class="field" /></li>
-
-				<li><label for="book" class="fieldLabel">Book : </label> <select
-					id="booksCatalog" name="book" class="booksCatalog">
-						<!-- It's filled with AXAJ -->
-
-				</select> <label for="amount" class="fieldLabel">Amount : </label> <input
-					id="amount" name="amount" type="number" class="field" /></li>
-
-				<li><input value="Submit Order" type="submit"></li>
-			</ul>
-		</form>
-	</section>
-
-	<footer> </footer>
 </body>
 </html>

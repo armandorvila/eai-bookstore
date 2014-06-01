@@ -25,22 +25,37 @@ public class HttpToOrdersTransofmer extends BookstoreAbstactTransformer {
 		@SuppressWarnings("unchecked")
 		Map<String, String> httpParams = (Map<String, String>) src;
 
-		Customer customer = customer(httpParams);
-		customer = saveOrUpdateCustomer(customer);
-		customer.setLoan(httpParams.get("loan") != null);
-
-		Order order = new Order();
-
-		order.setCustomer(customer);
-		order.setBook(book(httpParams.get("book")));
-		order.setAmount(Integer.parseInt(httpParams.get("amount")));
-		order.setDate(new Date());
-
-		saveOrder(order);
+		Customer customer = saveOrUpdateCustomer(parseCustomer(httpParams));
 
 		Set<Order> orders = new HashSet<>();
-		orders.add(order);
+		Order order = parseOrder(httpParams);
+		if (order.getBook() != null) {
+			order.setCustomer(customer);
+			order.setDate(new Date());
+
+			super.saveOrder(order);
+
+			orders.add(order);
+		} else {
+			logger.warn("A non existent book was received. ISBN :  "
+					+ httpParams.get("book"));
+		}
 		return orders;
+	}
+
+	private Order parseOrder(Map<String, String> httpParams) {
+		return new Order(super.findBook(httpParams.get("book")),
+				Integer.parseInt(httpParams.get("amount")));
+	}
+
+	private Customer parseCustomer(Map<String, String> httpParams) {
+		Customer customer = new Customer();
+		customer.setName(httpParams.get("name"));
+		customer.setNif(httpParams.get("nif"));
+		customer.setAddress(httpParams.get("address"));
+		customer.setMail(httpParams.get("mail"));
+		customer.setLoan(httpParams.get("loan") != null);
+		return customer;
 	}
 
 }

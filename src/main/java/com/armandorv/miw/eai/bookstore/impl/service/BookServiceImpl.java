@@ -6,6 +6,7 @@ import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,8 +77,13 @@ public class BookServiceImpl extends JdbcDaoSupport implements IBookService {
 
 	@Override
 	public Book findBook(String isbn) {
-		return super.getJdbcTemplate().queryForObject(findBookSql,
-				new Object[] { isbn }, new BookMapper());
+		try {
+			return super.getJdbcTemplate().queryForObject(findBookSql,
+					new Object[] { isbn }, new BookMapper());
+		} catch (EmptyResultDataAccessException e) {
+			logger.info("Book " + isbn + " not found");
+			return null;
+		}
 	}
 
 	@Override

@@ -1,7 +1,5 @@
 package com.armandorv.miw.eai.bookstore.impl.transformer;
 
-import java.util.Map;
-
 import org.mule.transformer.AbstractTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -23,7 +21,7 @@ public abstract class BookstoreAbstactTransformer extends AbstractTransformer {
 	@Autowired
 	private ICustomerService customerService;
 
-	protected Book book(String isbn) {
+	protected Book findBook(String isbn) {
 		return bookService.findBook(isbn);
 	}
 
@@ -44,14 +42,5 @@ public abstract class BookstoreAbstactTransformer extends AbstractTransformer {
 			customerService.updateCustomer(current);
 		}
 		return customerService.findCusomter(customer.getNif());
-	}
-
-	protected Customer customer(Map<String, String> httpParams) {
-		Customer customer = new Customer();
-		customer.setName(httpParams.get("name"));
-		customer.setNif(httpParams.get("nif"));
-		customer.setAddress(httpParams.get("address"));
-		customer.setMail(httpParams.get("mail"));
-		return customer;
 	}
 }

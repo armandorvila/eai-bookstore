@@ -3,7 +3,7 @@ package com.armandorv.miw.eai.bookstore.api.domain;
 import com.armandorv.miw.eai.bookstore.api.service.ICustomerService;
 
 /**
- * Model a customer of the bookshop.
+ * Model a customer of our bookstore.
  * 
  * @author armandorv
  * 

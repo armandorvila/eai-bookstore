@@ -1,0 +1,83 @@
+<div data-ng-cloak>
+
+	<div class="row col-md-offset-1">
+
+		<div class="col-md-8">
+
+			<form id="form" name="form" class="form" action="/orders"
+				method="post" novalidate
+				class="ng-scope ng-invalid ng-invalid-required ng-dirty ng-valid-minlength">
+
+				<div class="modal-header">
+					<h2 class="modal-title">Send order to Bookstore</h2>
+
+					<div class="alert alert-danger" data-ng-show="errorMessage">
+						<strong>{{errorMessage}}</strong>
+					</div>
+					
+					<div class="alert alert-success" data-ng-show="successMessage">
+						<strong>{{successMessage}}</strong>
+					</div>
+				</div>
+				<div class="modal-body">
+
+					<div class="form-group">
+						<label for="name" class="col-sm-2 control-label">Name : </label> <input
+							data-ng-model="customer.name" id="name" name="name" type="text"
+							autocomplete="on" class="form-control" maxlength="100"
+							placeholder="Type your name" required />
+					</div>
+
+					<div class="form-group">
+						<label for="nif" class="col-sm-2 control-label">NIF : </label> <input
+							data-ng-model="customer.nif" id="nif" name="nif" type="text"
+							autocomplete="on" class="form-control" maxlength="100"
+							placeholder="Type your NIF" required />
+					</div>
+
+					<div class="form-group">
+						<label for="address" class="col-sm-2 control-label">Address
+							: </label> <input data-ng-model="customer.address" type="text"
+							placeholder="Type your location"
+							data-typeahead="address.formatted_address for address in getLocations($viewValue) | filter:$viewValue"
+							class="form-control" required>
+					</div>
+
+					<div class="form-group">
+						<label for="mail" class="col-sm-2 control-label">E-mail: </label>
+						<input data-ng-model="customer.email" id="mail" name="mail"
+							type="email" autocomplete="on" class="form-control"
+							maxlength="100" placeholder="Type your e-mail" required />
+					</div>
+
+					<div class="form-group">
+						<label for="book" class="col-sm-2 control-label">Book: </label> <input
+							type="text" data-ng-model="book" name="book"
+							placeholder="Type a book title"
+							data-typeahead="book as (book.name) for book in getBooks($viewValue) | filter:$viewValue"
+							class="form-control" value="" required>
+					</div>
+					<div class="form-group">
+						<label for="amount" class="col-sm-2 control-label">Amount:
+							: </label> <input data-ng-model="book.amount" id="amount" name="amount"
+							type="number" class="form-control" placeholder="Type an amount"
+							required />
+					</div>
+					<div class="form-group">
+						<label for="loan" class="col-sm-2 control-label"> Loan: </label> <label>
+							Ask for a Loan <input type="checkbox" value="S"
+							data-ng-model="customer.loan">
+						</label>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button class="btn btn-success" type="button"
+						data-ng-disabled="form.$invalid" data-ng-click="submitOrder()">
+						Send order</button>
+				</div>
+			</form>
+
+
+		</div>
+	</div>
+</div>

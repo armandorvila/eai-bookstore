@@ -35,7 +35,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 	<!-- ******************* Connectors ******************************** -->
 
 	<file:connector name="fileInputConnector" fileAge="2000" autoDelete="true" moveToDirectory="/home/armandorv/mule/files/backup"
-		moveToPattern="#[header:originalFileName].backup" doc:name="File" />
+		moveToPattern="#[header:originalFileName]-input-#[function:datestamp].backup" doc:name="File" pollingFrequency="2000"/>
 
 	<smtp:gmail-connector name="gmailConnector" doc:name="Gmail" contentType="text/html" />
 
@@ -44,7 +44,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 	<!-- ******************* Application flows ******************************** -->
 	<flow name="web" doc:name="web">
-		<http:inbound-endpoint doc:name="Http Form" exchange-pattern="request-response" contentType="text/html"
+		<http:inbound-endpoint doc:name="Http Form" exchange-pattern="request-response" contentType="*"
 			address="http://0.0.0.0:8090/web" />
 		<http:static-resource-handler resourceBase="${app.home}/web" defaultFile="index.html"
 			doc:name="HTTP Static Resource Handler" />
@@ -52,14 +52,14 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 	<flow name="restBooksCatalog" doc:name="restBooksCatalog">
 		<http:inbound-endpoint doc:name="Http Form" exchange-pattern="request-response" contentType="text/html"
-			address="http://0.0.0.0:8090/books" />
+			address="http://0.0.0.0:8090/books"/>
 
 		<component doc:name="catalogProvider">
 			<spring-object bean="booksCatalogProviderComponent" />
 		</component>
 
 		<response>
-			<json:object-to-json-transformer doc:name="Object to JSON" />
+			<json:object-to-json-transformer doc:name="Books List to JSON" />
 		</response>
 	</flow>
 
@@ -76,19 +76,20 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 		<composite-source doc:name="Composite Source">
 
-			<file:inbound-endpoint name="fileInputEndpoint" connector-ref="fileInputConnector" path="//home/armandorv/files/input"
+			<file:inbound-endpoint name="fileInputEndpoint" connector-ref="fileInputConnector" 
+			path="/home/armandorv/mule/files/input"
 				doc:name="File">
+				<file:file-to-string-transformer doc:name="fileToString"/>
 				<custom-transformer class="com.armandorv.miw.eai.bookstore.impl.transformer.FileToOrdersTransofmer" />
 			</file:inbound-endpoint>
 
-			<http:inbound-endpoint address="http://0.0.0.0:8090/orders" doc:name="httpOrdersProcessorEndpont"
+			<http:inbound-endpoint address="http://0.0.0.0:8090/orders" doc:name="httpOrdersProcessorEndpoint"
 				exchange-pattern="one-way" method="POST">
-				<http:body-to-parameter-map-transformer>
-				</http:body-to-parameter-map-transformer>
+				<http:body-to-parameter-map-transformer/>
 				<custom-transformer class="com.armandorv.miw.eai.bookstore.impl.transformer.HttpToOrdersTransofmer" />
 			</http:inbound-endpoint>
 		</composite-source>
-
+		
 		<foreach doc:name="For Each Order in collection : verify">
 			<logger message=" Received order #[message:payload]" level="INFO" doc:name="Logger" />
 			<component doc:name="stockVerifier">
