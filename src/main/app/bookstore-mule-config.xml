@@ -39,6 +39,8 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 	<file:connector name="fileOutputConnector" doc:name="File" />
 
+	<smtp:gmail-connector name="gmailConnector" contentType="text/html" />
+	
 	<!-- ******************* Application flows ******************************** -->
 	<flow name="web" doc:name="web">
 		<http:inbound-endpoint doc:name="Http Form" exchange-pattern="request-response" address="http://0.0.0.0:8090/web" />
@@ -162,8 +164,9 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 						<transformer ref="notification2XmlTransformer" />
 						<transformer ref="notificationXsltTransformer" />
 
-						<smtp:outbound-endpoint name="smtpLoanNotificationsOutboundEndpont" port="587"
-							host="smtp.gmail.com" user="armandomiweai" from="notifications.bookstore@gmail.com" password="armandomiweai2013"
+						<smtp:outbound-endpoint name="smtpLoanNotificationsOutboundEndpont" 
+						 host="smtp.gmail.com" port="587"
+							user="armandomiweai" mimeType="text/html" encoding="UTF-8" from="notifications.bookstore@gmail.com" password="armandomiweai2013"
 							subject="Armando's Bookstore - Notification" to="#[variable:recipient]" doc:name="SMTP" />
 					</processor-chain>
 
@@ -191,14 +194,15 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set recipient" />
 		<set-variable value="#[message.payload.invoice.number]" variableName="invoiceNumber" doc:name="Set recipient" />
 
+
 		<all doc:name="All">
 			<processor-chain>
 				<expression-transformer expression="payload.getInvoice()" doc:name="ShipmentToInvoice" />
 				<transformer ref="invoice2XmlTransformer" doc:name="Invocie to XML" />
 
 				<all doc:name="All">
-					<smtp:outbound-endpoint name="smtpInvoicesOutboundEndpont"
-						host="smtp.gmail.com" port="587" user="armandomiweai" from="invoices.bookstore@gmail.com" password="armandomiweai2013"
+					<smtp:outbound-endpoint name="smtpInvoicesOutboundEndpont" port="587"
+						host="smtp.gmail.com"  user="armandomiweai" from="invoices.bookstore@gmail.com" password="armandomiweai2013"
 						mimeType="text/html" subject="Armando's Bookstore - Invoice" to="#[variable:recipient]" doc:name="SMTP (invoices.bookstore@gmail.com)">
 						<transformer ref="invoiceXsltTransformer" doc:name="XmlInvoiceToHtml" />
 					</smtp:outbound-endpoint>
@@ -235,8 +239,9 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 					<processor-chain>
 						<transformer ref="shipment2XmlTransformer" doc:name="Invocie to XML" />
-						<smtp:outbound-endpoint name="smtpExpressDispatchNoteOutboundEndpont" port="587"
-							host="smtp.gmail.com" user="armandomiweai" from="express.dispatch.bookstore@gmail.com" password="armandomiweai2013"
+						<smtp:outbound-endpoint name="smtpExpressDispatchNoteOutboundEndpont" 
+						 host="smtp.gmail.com" port="587"
+							user="armandomiweai" from="express.dispatch.bookstore@gmail.com" password="armandomiweai2013"
 							subject="Armando's Bookstore - Express Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
 							<transformer ref="shipmentXsltTransformer" doc:name="XmlShipmentToHtml" />
 						</smtp:outbound-endpoint>
@@ -258,9 +263,10 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 					<logger message="Sending ordniary dispath note ..." level="INFO" doc:name="Logger" />
 					<processor-chain>
 						<transformer ref="shipment2XmlTransformer" doc:name="Shipment to XML" />
-						<smtp:outbound-endpoint name="smtpDispatchNoteOutboundEndpont" port="587"
-							host="smtp.gmail.com" user="armandomiweai" from="dispatchs.bookstore@gmail.com" password="armandomiweai2013"
-							subject="Armando's Bookstore - Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
+						<smtp:outbound-endpoint name="smtpDispatchNoteOutboundEndpont" 
+						 host="smtp.gmail.com" port="587"
+							user="armandomiweai" from="dispatchs.bookstore@gmail.com" password="armandomiweai2013" subject="Armando's Bookstore - Dispatch Note"
+							to="#[variable:recipient]" doc:name="SMTP">
 							<transformer ref="shipmentXsltTransformer" doc:name="ShipmentHTMLGenerator" />
 						</smtp:outbound-endpoint>
 					</processor-chain>
@@ -285,7 +291,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 		<component doc:name="orderRefuser">
 			<spring-object bean="orderRefuserComponent" />
 		</component>
-
+<!-- connector-ref="gmailConnector" -->
 		<logger message="Sending notification #[message:payload] " level="INFO" doc:name="Logger" />
 
 		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set recipient" />
@@ -294,9 +300,11 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 			<transformer ref="notification2XmlTransformer" />
 			<transformer ref="notificationXsltTransformer" />
 
-			<smtp:outbound-endpoint name="smtpRefusementNotificationsOutboundEndpont" port="587"
+			<smtp:outbound-endpoint name="smtpRefusementNotificationsOutboundEndpont"  
+			port="587"
 				host="smtp.gmail.com" user="armandomiweai" from="notifications.bookstore@gmail.com" password="armandomiweai2013"
-				subject="Armando's Bookstore - Notification" to="#[variable:recipient]" doc:name="SMTP" />
+				subject="Armando's Bookstore - Notification" to="#[variable:recipient]" doc:name="SMTP" 
+				/>
 		</processor-chain>
 	</flow>
 
