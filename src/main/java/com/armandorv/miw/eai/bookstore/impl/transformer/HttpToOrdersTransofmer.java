@@ -26,6 +26,7 @@ public class HttpToOrdersTransofmer extends BookstoreAbstactTransformer {
 		Map<String, String> httpParams = (Map<String, String>) src;
 
 		Customer customer = saveOrUpdateCustomer(parseCustomer(httpParams));
+		customer.setLoan(httpParams.get("loan") != null);
 
 		Set<Order> orders = new HashSet<>();
 		Order order = parseOrder(httpParams);
@@ -34,7 +35,6 @@ public class HttpToOrdersTransofmer extends BookstoreAbstactTransformer {
 			order.setDate(new Date());
 
 			super.saveOrder(order);
-
 			orders.add(order);
 		} else {
 			logger.warn("A non existent book was received. ISBN :  "
@@ -54,7 +54,6 @@ public class HttpToOrdersTransofmer extends BookstoreAbstactTransformer {
 		customer.setNif(httpParams.get("nif"));
 		customer.setAddress(httpParams.get("address"));
 		customer.setMail(httpParams.get("mail"));
-		customer.setLoan(httpParams.get("loan") != null);
 		return customer;
 	}
 

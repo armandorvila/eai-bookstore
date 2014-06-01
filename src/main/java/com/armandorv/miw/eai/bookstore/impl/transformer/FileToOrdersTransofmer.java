@@ -31,6 +31,7 @@ public class FileToOrdersTransofmer extends BookstoreAbstactTransformer {
 		String[] lines = ((String) src).split("\n");
 		Customer customer = saveOrUpdateCustomer(parseCustomer(lines[1]
 				.split(";")));
+		customer.setLoan("S".equalsIgnoreCase(lines[1].split(";")[4]));
 
 		logger.info("Read " + lines.length + " for customer "
 				+ customer.getNif());
@@ -61,7 +62,6 @@ public class FileToOrdersTransofmer extends BookstoreAbstactTransformer {
 		Customer customer = new Customer(customerLine[1], customerLine[0],
 				customerLine[2]);
 		customer.setMail(customerLine[3]);
-		customer.setLoan("S".equalsIgnoreCase(customerLine[4]));
 		return customer;
 	}
 
