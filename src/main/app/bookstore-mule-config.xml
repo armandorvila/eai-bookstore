@@ -94,8 +94,9 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 			</component>
 		</foreach>
 
-		<collection-splitter doc:name="Collection Splitter" enableCorrelation="ALWAYS" />
-
+		<collection-splitter doc:name="Collection Splitter"/>
+		<custom-transformer class="com.armandorv.miw.eai.bookstore.impl.transformer.CorrelationGroupSizeTransformer" />
+		
 		<choice doc:name="Choice">
 			<when expression="payload.isInStock()">
 				<logger message="Order #[message:payload] is in stock ..." level="INFO" doc:name="Logger" />
@@ -116,7 +117,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 			a
 			shipment.
 		</description>
-
+		
 		<vm:inbound-endpoint path="processOrderInStock" doc:name="fromCheckOrderStock" />
 
 		<logger message="Cheking stock for Order #[message:payload]" level="INFO" doc:name="Logger" />

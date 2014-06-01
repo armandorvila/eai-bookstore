@@ -13,9 +13,14 @@ public class StockVerifier {
 
 	public Order checkStock(Order order) throws TransformerException {
 
-		order.setInStock(bookService.isAvailable(order.getBook(),
-				order.getAmount()));
-
+		boolean inStock = bookService.isAvailable(order.getBook(),
+				order.getAmount());
+		
+		if(inStock){
+			CorrlationGroupSize.getINSTANCE().increment();
+		}
+		
+		order.setInStock(inStock);
 		return order;
 	}
 }

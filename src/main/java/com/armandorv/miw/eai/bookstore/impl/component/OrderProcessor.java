@@ -12,7 +12,7 @@ import com.armandorv.miw.eai.bookstore.api.service.IBookService;
  * @author armandorv
  * 
  */
-public class OrderProcessor {
+public class OrderProcessor{
 
 	@Autowired
 	private IBookService bookService;
@@ -21,11 +21,13 @@ public class OrderProcessor {
 	 * Decrement the stock of the book.
 	 */
 	public Order processOrder(Order order) {
-
+		
+		
 		Book book = bookService.findBook(order.getBook().getIsbn());
 		book.decrementStock(order.getAmount());
 		bookService.updateBook(book);
-
+		
 		return order;
 	}
+
 }

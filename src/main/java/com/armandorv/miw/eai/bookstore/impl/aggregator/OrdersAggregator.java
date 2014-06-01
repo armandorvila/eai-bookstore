@@ -17,9 +17,11 @@ import org.mule.routing.correlation.EventCorrelatorCallback;
 
 import com.armandorv.miw.eai.bookstore.api.domain.Order;
 import com.armandorv.miw.eai.bookstore.api.domain.Shipment;
+import com.armandorv.miw.eai.bookstore.impl.component.CorrlationGroupSize;
 
 /**
- * It aggregates orders by their correlation id (parent AbstractAggregator carries out this).
+ * It aggregates orders by their correlation id (parent AbstractAggregator
+ * carries out this).
  * 
  * @author armandorv
  * 
@@ -53,10 +55,11 @@ public class OrdersAggregator extends AbstractAggregator {
 				} catch (ObjectStoreException e) {
 					throw new AggregationException(events, null, e);
 				}
-				
-				// All orders must be the same customer : TODO use the customer id as correlation id.
+
 				shipment.setCustomer(shipment.getOrders().iterator().next()
 						.getCustomer());
+
+				CorrlationGroupSize.getINSTANCE().reset();
 
 				return new DefaultMuleEvent(new DefaultMuleMessage(shipment,
 						muleContext), events.getMessageCollectionEvent());
