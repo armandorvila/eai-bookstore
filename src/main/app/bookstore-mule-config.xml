@@ -207,7 +207,8 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 					</smtp:outbound-endpoint>
 
 					<file:outbound-endpoint name="fileInvoicesOutboundEndpont" connector-ref="fileOutputConnector"
-						path="/home/armandorv/mule/files/output/invoices" outputPattern="#[variable:invoiceNumber].#[function:datestamp].html" doc:name="File">
+						path="/home/armandorv/mule/files/output/invoices" outputPattern="#[variable:invoiceNumber].#[function:datestamp].html"
+						doc:name="File">
 						<transformer ref="invoiceXsltTransformer" doc:name="XmlInvoiceToHtml" />
 					</file:outbound-endpoint>
 				</all>
@@ -240,14 +241,15 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 						<smtp:outbound-endpoint name="smtpExpressDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
 							host="smtp.gmail.com" user="armandomiweai" from="express.dispatch.bookstore@gmail.com" password="armandomiweai2013"
 							subject="Armando's Bookstore - Express Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
-							<transformer ref="shipmentXsltTransformer" doc:name="XmlShipmentToHtml"/>
+							<transformer ref="shipmentXsltTransformer" doc:name="XmlShipmentToHtml" />
 						</smtp:outbound-endpoint>
 					</processor-chain>
 					<processor-chain>
 						<transformer ref="shipment2XmlTransformer" doc:name="Invocie to XML" />
 						<file:outbound-endpoint name="fileExpressDispatchNoteOutboundEndpont" connector-ref="fileOutputConnector"
-							path="/home/armandorv/mule/files/output/expressDispatch" outputPattern="#[variable:shipmentNumber].#[function:datestamp].html" doc:name="File">
-							<transformer ref="shipmentXsltTransformer" doc:name="XmlShipmentToHtml"/>
+							path="/home/armandorv/mule/files/output/expressDispatch" outputPattern="#[variable:shipmentNumber].#[function:datestamp].html"
+							doc:name="File">
+							<transformer ref="shipmentXsltTransformer" doc:name="XmlShipmentToHtml" />
 						</file:outbound-endpoint>
 					</processor-chain>
 				</all>
@@ -262,14 +264,15 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 						<smtp:outbound-endpoint name="smtpDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
 							host="smtp.gmail.com" user="armandomiweai" from="dispatchs.bookstore@gmail.com" password="armandomiweai2013"
 							subject="Armando's Bookstore - Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
-							<transformer ref="shipmentXsltTransformer" doc:name="ShipmentHTMLGenerator"/>
+							<transformer ref="shipmentXsltTransformer" doc:name="ShipmentHTMLGenerator" />
 						</smtp:outbound-endpoint>
 					</processor-chain>
 					<processor-chain>
 						<transformer ref="shipment2XmlTransformer" doc:name="Shipment to XML" />
 						<file:outbound-endpoint name="fileDispatchNoteOutboundEndpont" connector-ref="fileOutputConnector"
-							path="/home/armandorv/mule/files/output/ordinaryDispatchs" outputPattern="#[variable:shipmentNumber].#[function:datestamp].html" doc:name="File">
-							<transformer ref="shipmentXsltTransformer" doc:name="ShipmentHTMLGenerator"/>
+							path="/home/armandorv/mule/files/output/ordinaryDispatchs" outputPattern="#[variable:shipmentNumber].#[function:datestamp].html"
+							doc:name="File">
+							<transformer ref="shipmentXsltTransformer" doc:name="ShipmentHTMLGenerator" />
 						</file:outbound-endpoint>
 					</processor-chain>
 				</all>
