@@ -35,7 +35,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 	<!-- ******************* Connectors ******************************** -->
 
 	<file:connector name="fileInputConnector" fileAge="2000" autoDelete="true" moveToDirectory="/home/armandorv/mule/files/backup"
-		moveToPattern="#[header:originalFileName]-input-#[function:datestamp].backup" doc:name="File" pollingFrequency="2000"/>
+		moveToPattern="#[header:originalFileName]-input-#[function:datestamp].backup" doc:name="File" pollingFrequency="2000" />
 
 	<smtp:gmail-connector name="gmailConnector" doc:name="Gmail" contentType="text/html" />
 
@@ -44,15 +44,14 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 	<!-- ******************* Application flows ******************************** -->
 	<flow name="web" doc:name="web">
-		<http:inbound-endpoint doc:name="Http Form" exchange-pattern="request-response" contentType="*"
-			address="http://0.0.0.0:8090/web" />
+		<http:inbound-endpoint doc:name="Http Form" exchange-pattern="request-response" address="http://0.0.0.0:8090/web" />
 		<http:static-resource-handler resourceBase="${app.home}/web" defaultFile="index.html"
 			doc:name="HTTP Static Resource Handler" />
 	</flow>
 
 	<flow name="restBooksCatalog" doc:name="restBooksCatalog">
 		<http:inbound-endpoint doc:name="Http Form" exchange-pattern="request-response" contentType="text/html"
-			address="http://0.0.0.0:8090/books"/>
+			address="http://0.0.0.0:8090/books" />
 
 		<component doc:name="catalogProvider">
 			<spring-object bean="booksCatalogProviderComponent" />
@@ -76,20 +75,19 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 		<composite-source doc:name="Composite Source">
 
-			<file:inbound-endpoint name="fileInputEndpoint" connector-ref="fileInputConnector" 
-			path="/home/armandorv/mule/files/input"
-				doc:name="File">
-				<file:file-to-string-transformer doc:name="fileToString"/>
+			<file:inbound-endpoint name="fileInputEndpoint" connector-ref="fileInputConnector"
+				path="/home/armandorv/mule/files/input" doc:name="File">
+				<file:file-to-string-transformer doc:name="fileToString" />
 				<custom-transformer class="com.armandorv.miw.eai.bookstore.impl.transformer.FileToOrdersTransofmer" />
 			</file:inbound-endpoint>
 
 			<http:inbound-endpoint address="http://0.0.0.0:8090/orders" doc:name="httpOrdersProcessorEndpoint"
 				exchange-pattern="one-way" method="POST">
-				<http:body-to-parameter-map-transformer/>
+				<http:body-to-parameter-map-transformer />
 				<custom-transformer class="com.armandorv.miw.eai.bookstore.impl.transformer.HttpToOrdersTransofmer" />
 			</http:inbound-endpoint>
 		</composite-source>
-		
+
 		<foreach doc:name="For Each Order in collection : verify">
 			<logger message=" Received order #[message:payload]" level="INFO" doc:name="Logger" />
 			<component doc:name="stockVerifier">
@@ -115,7 +113,8 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 		<description>
 			This process is in chaarge of decrement the stock of the
-			ordered book and aggregate all orders generating a
+			ordered book and aggregate all orders generating
+			a
 			shipment.
 		</description>
 
@@ -203,12 +202,14 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 				<all doc:name="All">
 					<smtp:outbound-endpoint name="smtpInvoicesOutboundEndpont" connector-ref="gmailConnector"
 						host="smtp.gmail.com" user="armandomiweai" from="invoices.bookstore@gmail.com" password="armandomiweai2013"
-						mimeType="text/html" subject="Armando's Bookstore - Invoice" to="#[variable:recipient]" doc:name="SMTP">
+						mimeType="text/html" subject="Armando's Bookstore - Invoice" to="#[variable:recipient]" doc:name="SMTP (invoices.bookstore@gmail.com)">
 						<transformer ref="invoiceXsltTransformer" doc:name="XmlInvoiceToHtml" />
 					</smtp:outbound-endpoint>
 
 					<file:outbound-endpoint name="fileInvoicesOutboundEndpont" connector-ref="fileOutputConnector"
-						path="/home/armandorv/mule/files/output/invoices" outputPattern="#[variable:invoiceNumber]" doc:name="File" />
+						path="/home/armandorv/mule/files/output/invoices" outputPattern="#[variable:invoiceNumber].#[function:datestamp].html" doc:name="File">
+						<transformer ref="invoiceXsltTransformer" doc:name="XmlInvoiceToHtml" />
+					</file:outbound-endpoint>
 				</all>
 			</processor-chain>
 
@@ -239,13 +240,15 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 						<smtp:outbound-endpoint name="smtpExpressDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
 							host="smtp.gmail.com" user="armandomiweai" from="express.dispatch.bookstore@gmail.com" password="armandomiweai2013"
 							subject="Armando's Bookstore - Express Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
-							<transformer ref="shipmentXsltTransformer" />
+							<transformer ref="shipmentXsltTransformer" doc:name="XmlShipmentToHtml"/>
 						</smtp:outbound-endpoint>
 					</processor-chain>
 					<processor-chain>
 						<transformer ref="shipment2XmlTransformer" doc:name="Invocie to XML" />
 						<file:outbound-endpoint name="fileExpressDispatchNoteOutboundEndpont" connector-ref="fileOutputConnector"
-							path="/home/armandorv/mule/files/output/expressDispatch" outputPattern="#[variable:shipmentNumber]" doc:name="File" />
+							path="/home/armandorv/mule/files/output/expressDispatch" outputPattern="#[variable:shipmentNumber].#[function:datestamp].html" doc:name="File">
+							<transformer ref="shipmentXsltTransformer" doc:name="XmlShipmentToHtml"/>
+						</file:outbound-endpoint>
 					</processor-chain>
 				</all>
 			</when>
@@ -259,13 +262,15 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 						<smtp:outbound-endpoint name="smtpDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
 							host="smtp.gmail.com" user="armandomiweai" from="dispatchs.bookstore@gmail.com" password="armandomiweai2013"
 							subject="Armando's Bookstore - Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
-							<transformer ref="shipmentXsltTransformer" />
+							<transformer ref="shipmentXsltTransformer" doc:name="ShipmentHTMLGenerator"/>
 						</smtp:outbound-endpoint>
 					</processor-chain>
 					<processor-chain>
 						<transformer ref="shipment2XmlTransformer" doc:name="Shipment to XML" />
 						<file:outbound-endpoint name="fileDispatchNoteOutboundEndpont" connector-ref="fileOutputConnector"
-							path="/home/armandorv/mule/files/output/ordinaryDispatchs" outputPattern="#[variable:shipmentNumber]" doc:name="File" />
+							path="/home/armandorv/mule/files/output/ordinaryDispatchs" outputPattern="#[variable:shipmentNumber].#[function:datestamp].html" doc:name="File">
+							<transformer ref="shipmentXsltTransformer" doc:name="ShipmentHTMLGenerator"/>
+						</file:outbound-endpoint>
 					</processor-chain>
 				</all>
 			</otherwise>

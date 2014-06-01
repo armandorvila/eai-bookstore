@@ -14,7 +14,7 @@
 					<div class="alert alert-danger" data-ng-show="errorMessage">
 						<strong>{{errorMessage}}</strong>
 					</div>
-					
+
 					<div class="alert alert-success" data-ng-show="successMessage">
 						<strong>{{successMessage}}</strong>
 					</div>
@@ -59,9 +59,15 @@
 					</div>
 					<div class="form-group">
 						<label for="amount" class="col-sm-2 control-label">Amount:
-							: </label> <input data-ng-model="book.amount" id="amount" name="amount"
+							</label> <input data-ng-model="book.amount" id="amount" name="amount"
 							type="number" class="form-control" placeholder="Type an amount"
 							required />
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label"> Total <span class="glyphicon glyphicon-usd"></span>:
+						</label> <input value="{{total(book)}}" id="amount" name="amount"
+							type="number" class="form-control" disabled>
+							
 					</div>
 					<div class="form-group">
 						<label for="loan" class="col-sm-2 control-label"> Loan: </label> <label>

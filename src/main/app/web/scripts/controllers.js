@@ -6,13 +6,20 @@ bookstoreApp.controller('MainController', [
 		'$scope',
 		'$http',
 		function($scope, $http) {
-			/*	 $http.get('/books').then(function (response) {
-			 $scope.books = response.data;
-			 });*/
-
-			//$scope.book = 'Select your book';
 			$scope.customer = {};
 
+			$scope.total = function(book){
+				if(book && book.price && book.amount){
+					return book.price * book.amount;
+				}
+				else if (book && book.price){
+					return book.price;
+				}
+				else {
+					return 0;
+				}
+			}
+			
 			$scope.submitOrder = function() {
 				$scope.errorMessage = undefined;
 				$scope.errorMessage = undefined;
