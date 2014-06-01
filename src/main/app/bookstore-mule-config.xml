@@ -37,10 +37,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 	<file:connector name="fileInputConnector" fileAge="2000" autoDelete="true" moveToDirectory="/home/armandorv/mule/files/backup"
 		moveToPattern="#[header:originalFileName]-input-#[function:datestamp].backup" doc:name="File" pollingFrequency="2000" />
 
-	<smtp:gmail-connector name="gmailConnector" doc:name="Gmail" contentType="text/html" />
-
 	<file:connector name="fileOutputConnector" doc:name="File" />
-
 
 	<!-- ******************* Application flows ******************************** -->
 	<flow name="web" doc:name="web">
@@ -165,7 +162,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 						<transformer ref="notification2XmlTransformer" />
 						<transformer ref="notificationXsltTransformer" />
 
-						<smtp:outbound-endpoint name="smtpLoanNotificationsOutboundEndpont" connector-ref="gmailConnector"
+						<smtp:outbound-endpoint name="smtpLoanNotificationsOutboundEndpont" port="587"
 							host="smtp.gmail.com" user="armandomiweai" from="notifications.bookstore@gmail.com" password="armandomiweai2013"
 							subject="Armando's Bookstore - Notification" to="#[variable:recipient]" doc:name="SMTP" />
 					</processor-chain>
@@ -200,8 +197,8 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 				<transformer ref="invoice2XmlTransformer" doc:name="Invocie to XML" />
 
 				<all doc:name="All">
-					<smtp:outbound-endpoint name="smtpInvoicesOutboundEndpont" connector-ref="gmailConnector"
-						host="smtp.gmail.com" user="armandomiweai" from="invoices.bookstore@gmail.com" password="armandomiweai2013"
+					<smtp:outbound-endpoint name="smtpInvoicesOutboundEndpont"
+						host="smtp.gmail.com" port="587" user="armandomiweai" from="invoices.bookstore@gmail.com" password="armandomiweai2013"
 						mimeType="text/html" subject="Armando's Bookstore - Invoice" to="#[variable:recipient]" doc:name="SMTP (invoices.bookstore@gmail.com)">
 						<transformer ref="invoiceXsltTransformer" doc:name="XmlInvoiceToHtml" />
 					</smtp:outbound-endpoint>
@@ -238,7 +235,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 					<processor-chain>
 						<transformer ref="shipment2XmlTransformer" doc:name="Invocie to XML" />
-						<smtp:outbound-endpoint name="smtpExpressDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
+						<smtp:outbound-endpoint name="smtpExpressDispatchNoteOutboundEndpont" port="587"
 							host="smtp.gmail.com" user="armandomiweai" from="express.dispatch.bookstore@gmail.com" password="armandomiweai2013"
 							subject="Armando's Bookstore - Express Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
 							<transformer ref="shipmentXsltTransformer" doc:name="XmlShipmentToHtml" />
@@ -261,7 +258,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 					<logger message="Sending ordniary dispath note ..." level="INFO" doc:name="Logger" />
 					<processor-chain>
 						<transformer ref="shipment2XmlTransformer" doc:name="Shipment to XML" />
-						<smtp:outbound-endpoint name="smtpDispatchNoteOutboundEndpont" connector-ref="gmailConnector"
+						<smtp:outbound-endpoint name="smtpDispatchNoteOutboundEndpont" port="587"
 							host="smtp.gmail.com" user="armandomiweai" from="dispatchs.bookstore@gmail.com" password="armandomiweai2013"
 							subject="Armando's Bookstore - Dispatch Note" to="#[variable:recipient]" doc:name="SMTP">
 							<transformer ref="shipmentXsltTransformer" doc:name="ShipmentHTMLGenerator" />
@@ -297,7 +294,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 			<transformer ref="notification2XmlTransformer" />
 			<transformer ref="notificationXsltTransformer" />
 
-			<smtp:outbound-endpoint name="smtpRefusementNotificationsOutboundEndpont" connector-ref="gmailConnector"
+			<smtp:outbound-endpoint name="smtpRefusementNotificationsOutboundEndpont" port="587"
 				host="smtp.gmail.com" user="armandomiweai" from="notifications.bookstore@gmail.com" password="armandomiweai2013"
 				subject="Armando's Bookstore - Notification" to="#[variable:recipient]" doc:name="SMTP" />
 		</processor-chain>
