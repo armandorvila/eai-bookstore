@@ -3,6 +3,7 @@ package com.armandorv.miw.eai.bookstore.service;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 import com.armandorv.miw.eai.bookstore.AbstractServiceTest;
 import com.armandorv.miw.eai.bookstore.api.domain.Customer;
@@ -10,6 +11,7 @@ import com.armandorv.miw.eai.bookstore.api.domain.Notification;
 import com.armandorv.miw.eai.bookstore.api.service.ICustomerService;
 import com.armandorv.miw.eai.bookstore.api.service.INotificationService;
 
+@DirtiesContext
 public class NotificationServiceTest extends AbstractServiceTest {
 
 	@Autowired

@@ -13,11 +13,11 @@ drop TABLE IF EXISTS bookstore.Order cascade;
 drop TABLE IF EXISTS bookstore.Shipment_Order cascade;
 drop TABLE IF EXISTS bookstore.Shipment cascade;
 
-drop SCHEMA IF EXISTS bookstore cascade;
+--drop SCHEMA IF EXISTS bookstore cascade;
 
 -------------------------- CREATE Sentences -------------------------
 
-CREATE SCHEMA bookstore;
+CREATE SCHEMA IF NOT EXISTS bookstore;
 
 --Sequence for ids (It changes from one dbms to another)
 CREATE TABLE bookstore.bookstore_id_generator_table(i int); 

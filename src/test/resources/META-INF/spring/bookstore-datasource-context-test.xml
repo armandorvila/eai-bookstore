@@ -13,6 +13,8 @@
 		http://www.springframework.org/schema/jdbc
 		http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd">
 
+	<context:property-placeholder location="classpath:bookstore-application.properties" />
+
 	<jdbc:embedded-database id="dataSource">
 		<jdbc:script location="classpath:sql/bookstore-schema-hsql.sql" />
 		<jdbc:script location="classpath:sql/bookstore-data-hsql.sql" />

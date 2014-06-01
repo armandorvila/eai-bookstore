@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <mule xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core"
-	version="CE-3.4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:script="http://www.mulesoft.org/schema/mule/scripting" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:spring="http://www.springframework.org/schema/beans"
+	xmlns:core="http://www.mulesoft.org/schema/mule/core" version="CE-3.4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
 http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
@@ -42,14 +43,18 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 
 	<!-- ******************* Application flows ******************************** -->
 
+
+
 	<!-- ****************************** Invoice Transformer ********************** -->
 
-	<mulexml:object-to-xml-transformer name="invoice2XmlTransformer" encoding="UTF-8" doc:name="Object to XML">
+	<mulexml:object-to-xml-transformer name="invoice2XmlTransformer" encoding="UTF-8"
+		doc:name="Object to XML">
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Invoice" name="invoice" />
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Book" name="book" />
 	</mulexml:object-to-xml-transformer>
 
-	<mulexml:xslt-transformer name="invoiceXsltTransformer" encoding="UTF-8" outputEncoding="UTF-8" doc:name="XSLT">
+	<mulexml:xslt-transformer name="invoiceXsltTransformer" encoding="UTF-8" outputEncoding="UTF-8"
+		doc:name="XSLT">
 		<mulexml:xslt-text>
 			<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 				<xsl:output method="html" />
@@ -110,7 +115,8 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 
 	<!-- ****************************** Shipment Transformers ********************** -->
 
-	<mulexml:object-to-xml-transformer name="shipment2XmlTransformer" encoding="UTF-8" doc:name="Object to XML">
+	<mulexml:object-to-xml-transformer name="shipment2XmlTransformer" encoding="UTF-8"
+		doc:name="Object to XML">
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Shipment" name="shipment" />
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Customer" name="customer" />
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Order" name="order" />
@@ -200,7 +206,8 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 		</mulexml:xslt-text>
 	</mulexml:xslt-transformer>
 
-	<mulexml:object-to-xml-transformer name="notification2XmlTransformer" encoding="UTF-8" doc:name="Object to XML">
+	<mulexml:object-to-xml-transformer name="notification2XmlTransformer" encoding="UTF-8"
+		doc:name="Object to XML">
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Notification" name="notification" />
 		<mulexml:alias class="com.armandorv.miw.eai.bookstore.api.domain.Customer" name="customer" />
 	</mulexml:object-to-xml-transformer>
@@ -226,7 +233,7 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 			</xsl:stylesheet>
 		</mulexml:xslt-text>
 	</mulexml:xslt-transformer>
-    <flow name="checkOrderStock" doc:name="checkOrderStock">
+	<flow name="checkOrderStock" doc:name="checkOrderStock">
 
 		<description>
 			This process receives a collections of orders, then
@@ -261,7 +268,7 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 			</otherwise>
 		</choice>
 	</flow>
-    <flow name="processOrderInStock" doc:name="processOrderInStock">
+	<flow name="processOrderInStock" doc:name="processOrderInStock">
 
 		<description>
 			This process is in chaarge of decrement the stock of the
@@ -293,11 +300,13 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 			</otherwise>
 		</choice>
 	</flow>
-    <flow name="manageLoanRequest" doc:name="manageLoanRequest">
+	<flow name="manageLoanRequest" doc:name="manageLoanRequest">
 		<vm:inbound-endpoint path="manageLoanRequest" doc:name="fromProcessOrderInStock" />
+
 		<component doc:name="loanOfficer">
 			<spring-object bean="loanBrokerComponent" />
 		</component>
+
 		<choice doc:name="Choice">
 			<when expression="payload.getCustomer().hasLoanAccepted()">
 				<logger message="Loan accepted for shipment: #[message:payload]" level="INFO" doc:name="Logger" />
@@ -317,7 +326,8 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 			</otherwise>
 		</choice>
 	</flow>
-    <flow name="generateInvoice" doc:name="generateInvoice">
+	
+	<flow name="generateInvoice" doc:name="generateInvoice">
 
 		<vm:inbound-endpoint path="generateInvoice" doc:name="fromProcessOrderInStock | fromManageLoanRequest" />
 
@@ -343,7 +353,7 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 			<vm:outbound-endpoint path="sendOrders" doc:name="toSendOrders" />
 		</all>
 	</flow>
-    <flow name="sendOrders" doc:name="sendOrders">
+	<flow name="sendOrders" doc:name="sendOrders">
 		<vm:inbound-endpoint path="sendOrders" doc:name="fromProcessOrderInStock" />
 
 		<logger message="Preparing dispatch note for shipment: #[message:payload]." level="INFO" doc:name="Logger" />
@@ -373,7 +383,7 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 			</otherwise>
 		</choice>
 	</flow>
-    <flow name="refuseByNotStock" doc:name="refuseByNotStock">
+	<flow name="refuseByNotStock" doc:name="refuseByNotStock">
 		<vm:inbound-endpoint path="refuseByNotStock" doc:name="VM" />
 
 		<logger message="Refusing order #[message:payload] " level="INFO" doc:name="Logger" />
@@ -386,4 +396,5 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
 
 		<outbound-endpoint ref="smtpNotificationsOutboundEndpont" doc:name="smtpNotificationsOutboundEndpont" />
 	</flow>
+
 </mule>

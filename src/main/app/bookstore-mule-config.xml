@@ -67,10 +67,11 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 		<description>
 			This process receives a collections of orders, then
-			iterates the collection, verifying the stock and
-			spliting the
-			collection. Every spllited order is routed to the process Order or to
-			the denied Order Process.
+			iterates above the collection, verifying the stock and
+			splliting the collection.
+			Every spllited order is routed to the "process Order" process or to
+			the "Denied Order"
+			process.
 		</description>
 
 		<composite-source doc:name="Composite Source">
@@ -113,9 +114,8 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 
 		<description>
 			This process is in chaarge of decrement the stock of the
-			ordered book and
-			aggregate all orders generating a
-			coollection.
+			ordered book and aggregate all orders generating a
+			shipment.
 		</description>
 
 		<vm:inbound-endpoint path="processOrderInStock" doc:name="fromCheckOrderStock" />

@@ -19,8 +19,10 @@ public class LoanNotifier {
 		notification.setSubject("Loan acepted");
 		notification.setMessage("Your loan request for "
 				+ shipment.shipmentPrice() + " $ has been accepted.");
-		notificationService.saveNotification(notification);
 
+		
+		notificationService.saveNotification(notification);
+		
 		return notification;
 	}
 }

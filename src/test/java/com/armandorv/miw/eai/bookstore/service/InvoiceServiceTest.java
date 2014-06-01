@@ -5,11 +5,13 @@ import java.util.Date;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 import com.armandorv.miw.eai.bookstore.AbstractServiceTest;
 import com.armandorv.miw.eai.bookstore.api.domain.Invoice;
 import com.armandorv.miw.eai.bookstore.api.service.IInvoiceService;
 
+@DirtiesContext
 public class InvoiceServiceTest extends AbstractServiceTest {
 
 	@Autowired

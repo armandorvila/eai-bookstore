@@ -4,6 +4,7 @@ import java.util.Date;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 import com.armandorv.miw.eai.bookstore.AbstractServiceTest;
 import com.armandorv.miw.eai.bookstore.api.domain.Order;
@@ -11,6 +12,7 @@ import com.armandorv.miw.eai.bookstore.api.service.IBookService;
 import com.armandorv.miw.eai.bookstore.api.service.ICustomerService;
 import com.armandorv.miw.eai.bookstore.api.service.IOrderService;
 
+@DirtiesContext
 public class OrderServiceTest extends AbstractServiceTest {
 
 	@Autowired

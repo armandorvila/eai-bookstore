@@ -1,5 +1,5 @@
 insert into bookstore."Customer" (id, name, nif, address, mail, debt) 
-values (1100,'Armando Jaleo', '62789475D', 'Calle La Pantomima, Madrid', 'armando@f1.com' , 0);
+values (1100,'Armando Jaleo', '62789475D', 'Calle La Pantomima, Madrid', 'armando@f12.com' , 11100);
 
 insert into bookstore."Customer" (id, name, nif, address, mail, debt) 
 values (2100,'Julio Pederada', '65459475D', 'Calle La Anarquía, Madrid', 'julio@dbas.com' , 0);
