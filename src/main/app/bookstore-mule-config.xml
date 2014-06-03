@@ -192,8 +192,8 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 		</component>
 
 		<logger message="Generated invoice for #[message:payload]" level="INFO" doc:name="Logger" />
-		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set recipient" />
-		<set-variable value="#[message.payload.invoice.number]" variableName="invoiceNumber" doc:name="Set recipient" />
+		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set mail" />
+		<set-variable value="#[message.payload.invoice.number]" variableName="invoiceNumber" doc:name="Set invoice num" />
 
 
 		<all doc:name="All">
@@ -221,7 +221,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 	</flow>
 
 	<flow name="sendOrders" doc:name="sendOrders">
-		<vm:inbound-endpoint path="sendOrders" doc:name="fromProcessOrderInStock" />
+		<vm:inbound-endpoint path="sendOrders" doc:name="fromGenerateInvoice" />
 
 		<logger message="Preparing dispatch note for shipment: #[message:payload]." level="INFO" doc:name="Logger" />
 
@@ -229,8 +229,8 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 			<spring-object bean="vipVerifierComponent" />
 		</component>
 
-		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set recipient" />
-		<set-variable value="#[message.payload.shipmentNumber]" variableName="shipmentNumber" doc:name="Set recipient" />
+		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set mail" />
+		<set-variable value="#[message.payload.shipmentNumber]" variableName="shipmentNumber" doc:name="Set shipment num " />
 
 		<choice doc:name="Choice">
 			<!-- Send express note -->
@@ -295,7 +295,7 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 <!-- connector-ref="gmailConnector" -->
 		<logger message="Sending notification #[message:payload] " level="INFO" doc:name="Logger" />
 
-		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set recipient" />
+		<set-variable value="#[message.payload.customer.mail]" variableName="recipient" doc:name="Set mail" />
 
 		<processor-chain>
 			<transformer ref="notification2XmlTransformer" />
